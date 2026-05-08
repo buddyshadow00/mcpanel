@@ -1,0 +1,904 @@
+<%- include('../partials/header') %>
+
+<style>
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
+    border: 1px solid var(--border-primary);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.stat-icon.online { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+.stat-icon.ops { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+.stat-icon.whitelist { background: rgba(59, 130, 246, 0.1); color: var(--accent-primary); }
+.stat-icon.banned { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+.stat-info h4 {
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0;
+}
+
+.stat-info p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.player-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+    transition: all 0.2s;
+}
+
+.player-card:hover {
+    border-color: var(--accent-primary);
+    transform: translateX(4px);
+}
+
+.player-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    position: relative;
+}
+
+.player-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+}
+
+.status-dot {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--bg-elevated);
+    background: var(--success);
+    box-shadow: 0 0 8px var(--success);
+}
+
+.player-info {
+    flex: 1;
+}
+
+.player-name {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.player-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 6px;
+}
+
+.badge-online {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s;
+}
+
+.modal.show {
+    display: flex;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: hidden;
+    animation: scaleIn 0.2s;
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.modal-close:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    max-height: calc(90vh - 80px);
+}
+
+.toast {
+    position: fixed;
+    top: 30px;
+    right: 30px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 10001;
+    animation: slideIn 0.3s;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    min-width: 300px;
+    font-weight: 600;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(400px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.toast.success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.toast.error {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+
+.toast.info {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+
+.toast.warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
+</style>
+
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">
+                <i class="fas fa-users"></i>
+                Player Management
+            </h1>
+            <p class="page-subtitle"><%= server.name %></p>
+        </div>
+        <div class="page-actions">
+            <button class="btn btn-secondary" onclick="refreshPlayers()" id="refreshBtn">
+                <i class="fas fa-sync"></i>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon online">
+                <i class="fas fa-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h4 id="onlineCount"><%= online ? online.length : 0 %></h4>
+                <p>Online Players</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon ops">
+                <i class="fas fa-crown"></i>
+            </div>
+            <div class="stat-info">
+                <h4 id="opsCount"><%= ops ? ops.length : 0 %></h4>
+                <p>Operators</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon whitelist">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="stat-info">
+                <h4 id="whitelistCount"><%= whitelist ? whitelist.length : 0 %></h4>
+                <p>Whitelisted</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon banned">
+                <i class="fas fa-ban"></i>
+            </div>
+            <div class="stat-info">
+                <h4 id="bannedCount"><%= banned ? banned.length : 0 %></h4>
+                <p>Banned</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>Online Players (<span id="onlineCountText"><%= online ? online.length : 0 %></span>)</h3>
+        </div>
+        <div class="card-body" id="onlinePlayersContainer">
+            <% if (online && online.length > 0) { %>
+                <div id="onlinePlayersList">
+                    <% online.forEach(player => { %>
+                        <div class="player-card">
+                            <div class="player-avatar">
+                                <img src="https://mc-heads.net/avatar/<%= player %>/48" alt="<%= player %>">
+                                <div class="status-dot"></div>
+                            </div>
+                            <div class="player-info">
+                                <div class="player-name"><%= player %></div>
+                                <span class="player-badge badge-online">
+                                    <i class="fas fa-circle"></i> ONLINE
+                                </span>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-sm btn-warning" onclick="makeOp('<%= player %>')" title="Make Operator">
+                                    <i class="fas fa-crown"></i>
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="addWhitelist('<%= player %>')" title="Add to Whitelist">
+                                    <i class="fas fa-shield-alt"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="kickPlayer('<%= player %>')" title="Kick">
+                                    <i class="fas fa-door-open"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="banPlayer('<%= player %>')" title="Ban">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } else { %>
+                <p style="text-align: center; color: var(--text-muted); padding: 40px;" id="noPlayersMsg">No players currently online</p>
+            <% } %>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>Operators</h3>
+            <button class="btn btn-sm btn-primary" onclick="showModal('addOpModal')">
+                <i class="fas fa-plus"></i>
+                Add Operator
+            </button>
+        </div>
+        <div class="card-body">
+            <% if (ops && ops.length > 0) { %>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Level</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="opsTableBody">
+                            <% ops.forEach(op => { %>
+                                <tr>
+                                    <td><strong><%= op.name %></strong></td>
+                                    <td><span class="badge badge-warning">Level <%= op.level || 4 %></span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="removeOp('<%= op.name %>')">
+                                            <i class="fas fa-times"></i> Remove
+                                        </button>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <p style="text-align: center; color: var(--text-muted); padding: 40px;">No operators configured</p>
+            <% } %>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>Whitelist</h3>
+            <button class="btn btn-sm btn-primary" onclick="showModal('addWhitelistModal')">
+                <i class="fas fa-plus"></i>
+                Add to Whitelist
+            </button>
+        </div>
+        <div class="card-body">
+            <% if (whitelist && whitelist.length > 0) { %>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>UUID</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="whitelistTableBody">
+                            <% whitelist.forEach(player => { %>
+                                <tr>
+                                    <td><strong><%= player.name %></strong></td>
+                                    <td style="font-family: monospace; font-size: 11px;"><%= player.uuid || 'N/A' %></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="removeWhitelist('<%= player.name %>')">
+                                            <i class="fas fa-times"></i> Remove
+                                        </button>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <p style="text-align: center; color: var(--text-muted); padding: 40px;">Whitelist is empty</p>
+            <% } %>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>Banned Players</h3>
+            <button class="btn btn-sm btn-danger" onclick="showModal('banModal')">
+                <i class="fas fa-ban"></i>
+                Ban Player
+            </button>
+        </div>
+        <div class="card-body">
+            <% if (banned && banned.length > 0) { %>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Reason</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bannedTableBody">
+                            <% banned.forEach(player => { %>
+                                <tr>
+                                    <td><strong><%= player.name %></strong></td>
+                                    <td><%= player.reason || 'No reason specified' %></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success" onclick="unbanPlayer('<%= player.name %>')">
+                                            <i class="fas fa-check"></i> Unban
+                                        </button>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <p style="text-align: center; color: var(--text-muted); padding: 40px;">No banned players</p>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modals -->
+<div id="addOpModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-crown"></i> Add Operator</h3>
+            <button class="modal-close" onclick="closeModal('addOpModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form onsubmit="addOp(event)">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" name="username" class="form-control" required placeholder="Enter player username">
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addOpModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Operator</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="addWhitelistModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-shield-alt"></i> Add to Whitelist</h3>
+            <button class="modal-close" onclick="closeModal('addWhitelistModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form onsubmit="addWhitelistForm(event)">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" name="username" class="form-control" required placeholder="Enter player username">
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addWhitelistModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add to Whitelist</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="banModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-ban"></i> Ban Player</h3>
+            <button class="modal-close" onclick="closeModal('banModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form onsubmit="banPlayerForm(event)">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" name="username" class="form-control" required placeholder="Enter player username">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Reason (Optional)</label>
+                    <input type="text" name="reason" class="form-control" placeholder="Violation of server rules">
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('banModal')">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Ban Player</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const serverId = '<%= server.id %>';
+let socket = null;
+
+console.log('Players page loaded, Server ID:', serverId);
+
+// Initialize Socket.IO
+function initSocket() {
+    if (typeof io === 'undefined') {
+        console.error('Socket.IO not loaded');
+        return;
+    }
+    
+    socket = io();
+    
+    socket.on('connect', () => {
+        console.log('Socket.IO connected');
+        socket.emit('join-server', serverId);
+    });
+    
+    socket.on('disconnect', () => {
+        console.log('Socket.IO disconnected');
+    });
+    
+    socket.on('playerJoined', (data) => {
+        console.log('Player joined:', data);
+        updateOnlinePlayers(data.onlinePlayers);
+        showToast(data.player + ' joined the game', 'success');
+    });
+    
+    socket.on('playerLeft', (data) => {
+        console.log('Player left:', data);
+        updateOnlinePlayers(data.onlinePlayers);
+        showToast(data.player + ' left the game', 'info');
+    });
+    
+    socket.on('playersUpdated', (data) => {
+        console.log('Players updated:', data);
+        updateOnlinePlayers(data.onlinePlayers);
+    });
+}
+
+// Update online players UI
+function updateOnlinePlayers(players) {
+    const container = document.getElementById('onlinePlayersContainer');
+    const count = players.length;
+    
+    document.getElementById('onlineCount').textContent = count;
+    document.getElementById('onlineCountText').textContent = count;
+    
+    if (count > 0) {
+        container.innerHTML = '<div id="onlinePlayersList">' + players.map(player => `
+            <div class="player-card">
+                <div class="player-avatar">
+                    <img src="https://mc-heads.net/avatar/${player}/48" alt="${player}">
+                    <div class="status-dot"></div>
+                </div>
+                <div class="player-info">
+                    <div class="player-name">${player}</div>
+                    <span class="player-badge badge-online">
+                        <i class="fas fa-circle"></i> ONLINE
+                    </span>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="btn btn-sm btn-warning" onclick="makeOp('${player}')" title="Make Operator">
+                        <i class="fas fa-crown"></i>
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="addWhitelist('${player}')" title="Add to Whitelist">
+                        <i class="fas fa-shield-alt"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="kickPlayer('${player}')" title="Kick">
+                        <i class="fas fa-door-open"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="banPlayer('${player}')" title="Ban">
+                        <i class="fas fa-ban"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('') + '</div>';
+    } else {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 40px;">No players currently online</p>';
+    }
+}
+
+// Modal functions
+function showModal(modalId) {
+    document.getElementById(modalId).classList.add('show');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('show');
+}
+
+// Toast notifications
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    
+    const icon = type === 'success' ? 'check-circle' : 
+                 type === 'error' ? 'exclamation-circle' : 
+                 type === 'warning' ? 'exclamation-triangle' : 
+                 'info-circle';
+    
+    toast.innerHTML = '<i class="fas fa-' + icon + '"></i><span>' + message + '</span>';
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Player actions
+async function addOp(e) {
+    e.preventDefault();
+    const username = e.target.username.value;
+    
+    try {
+        const res = await fetch('/servers/' + serverId + '/players/op/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: username })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message || 'Operator added successfully!', 'success');
+            closeModal('addOpModal');
+            e.target.reset();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Error: ' + (data.error || 'Failed'), 'error');
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function removeOp(username) {
+    if (!confirm('Remove ' + username + ' from operators?')) return;
+    
+    try {
+        const res = await fetch('/servers/' + serverId + '/players/op/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: username })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message || 'Operator removed successfully!', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Error: ' + (data.error || 'Failed'), 'error');
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function makeOp(username) {
+    if (!confirm('Make ' + username + ' an operator?')) return;
+    
+    try {
+        const res = await fetch('/servers/' + serverId + '/players/op/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: username })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message || username + ' is now an operator', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Error: ' + (data.error || 'Failed'), 'error');
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function addWhitelistForm(e) {
+    e.preventDefault();
+    const username = e.target.username.value;
+    
+    try {
+        const res = await fetch('/servers/' + serverId + '/players/whitelist/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: username })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message || 'Player added to whitelist!', 'success');
+            closeModal('addWhitelistModal');
+            e.target.reset();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Error: ' + (data.error || 'Failed'), 'error');
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function addWhitelist(username) {
+    if (!confirm('Add ' + username + ' to whitelist?')) return;
+    
+    try {
+        const res = await fetch('/servers/' + serverId + '/players/whitelist/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: username })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message || username + ' added to whitelist', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Error: ' + (data.error || 'Failed'), 'error');
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function removeWhitelist(username) {
+    if (!confirm('Remove ' + username + ' from whitelist?')) return;
+    
+    try {
+        const res = await fetch('/servers/' + serverId + '/players/whitelist/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: username })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message || username + ' removed from whitelist', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Error: ' + (data.error || 'Failed'), 'error');
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function banPlayerForm(e) {
+    e.preventDefault();
+    const username = e.target.username.value;
+    const reason = e.target.reason.value || 'Banned by an operator';
+    
+    try {
+        const res = await fetch('/servers/' + serverId + '/players/ban/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: username, reason: reason })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message || username + ' has been banned', 'success');
+            closeModal('banModal');
+            e.target.reset();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Error: ' + (data.error || 'Failed'), 'error');
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function banPlayer(username) {
+    const reason = prompt('Enter ban reason for ' + username + ':', 'Violation of server rules');
+    if (reason === null) return;
+    
+    try {
+        const res = await fetch('/servers/' + serverId + '/players/ban/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: username, reason: reason })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message || username + ' has been banned', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Error: ' + (data.error || 'Failed'), 'error');
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function unbanPlayer(username) {
+    if (!confirm('Unban ' + username + '?')) return;
+    
+    try {
+        const res = await fetch('/servers/' + serverId + '/players/ban/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: username })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message || username + ' has been unbanned', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Error: ' + (data.error || 'Failed'), 'error');
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+async function kickPlayer(username) {
+    const reason = prompt('Enter kick reason for ' + username + ':', 'Kicked by admin');
+    if (reason === null) return;
+    
+    try {
+        const res = await fetch('/servers/' + serverId + '/players/kick', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: username, reason: reason })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message || username + ' has been kicked', 'success');
+        } else {
+            showToast('Error: ' + (data.error || 'Failed'), 'error');
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
+
+// Refresh players
+async function refreshPlayers() {
+    const btn = document.getElementById('refreshBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+    
+    try {
+        const res = await fetch('/servers/' + serverId + '/players/online/refresh', {
+            method: 'POST'
+        });
+        if (res.ok) {
+            showToast('Player list refreshed', 'success');
+            setTimeout(() => location.reload(), 1000);
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+    
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-sync"></i> Refresh';
+}
+
+// Close modals on outside click
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('show');
+        }
+    });
+});
+
+// Initialize Socket.IO
+initSocket();
+
+console.log('All functions loaded successfully');
+</script>
+
+<%- include('../partials/footer') %>

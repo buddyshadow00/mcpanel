@@ -1,0 +1,244 @@
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <img src="<%= settings.headerIcon || '/header-icon.jpg' %>" alt="<%= settings.panelName %>" class="sidebar-logo">
+        <h2 class="sidebar-title"><%= settings.panelName %></h2>
+    </div>
+
+    <nav class="sidebar-nav">
+        <%
+            // Detect current context
+            const currentPath = typeof req !== 'undefined' && req.path ? req.path : '';
+            const isInServerContext = typeof server !== 'undefined' && server;
+            const isInAdminArea = currentPath.startsWith('/admin');
+            const isAdminUser = user && user.role === 'admin';
+        %>
+        
+        <!-- SERVER MANAGEMENT CONTEXT -->
+        <% if (isInServerContext) { %>
+            <div class="nav-section">
+                <a href="/dashboard" class="nav-item nav-item-back" style="background: var(--bg-hover); color: var(--accent-primary); font-weight: 600;">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to Dashboard</span>
+                </a>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-section-title">
+                    <i class="fas fa-server"></i>
+                    <%= server.name || 'SERVER' %>
+                </div>
+                
+                <a href="/servers/<%= server.id %>/dashboard" 
+                   class="nav-item <%= (typeof activePage !== 'undefined' && activePage === 'dashboard') ? 'active' : '' %>">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Overview</span>
+                </a>
+                
+                <a href="/servers/<%= server.id %>/console" 
+                   class="nav-item <%= (typeof activePage !== 'undefined' && activePage === 'console') ? 'active' : '' %>">
+                    <i class="fas fa-terminal"></i>
+                    <span>Console</span>
+                </a>
+                
+                <a href="/servers/<%= server.id %>/files" 
+                   class="nav-item <%= (typeof activePage !== 'undefined' && activePage === 'files') ? 'active' : '' %>">
+                    <i class="fas fa-folder-open"></i>
+                    <span>File Manager</span>
+                </a>
+                
+                <a href="/servers/<%= server.id %>/players" 
+                   class="nav-item <%= (typeof activePage !== 'undefined' && activePage === 'players') ? 'active' : '' %>">
+                    <i class="fas fa-users"></i>
+                    <span>Players</span>
+                </a>
+                
+                <a href="/servers/<%= server.id %>/worlds" 
+                   class="nav-item <%= (typeof activePage !== 'undefined' && activePage === 'worlds') ? 'active' : '' %>">
+                    <i class="fas fa-globe"></i>
+                    <span>Worlds</span>
+                </a>
+                
+                <a href="/servers/<%= server.id %>/plugins" 
+                   class="nav-item <%= (typeof activePage !== 'undefined' && activePage === 'plugins') ? 'active' : '' %>">
+                    <i class="fas fa-plug"></i>
+                    <span>Plugins</span>
+                </a>
+                
+                <a href="/servers/<%= server.id %>/backups" 
+                   class="nav-item <%= (typeof activePage !== 'undefined' && activePage === 'backups') ? 'active' : '' %>">
+                    <i class="fas fa-database"></i>
+                    <span>Backups</span>
+                </a>
+                
+                <a href="/servers/<%= server.id %>/subusers" 
+                   class="nav-item <%= (typeof activePage !== 'undefined' && activePage === 'subusers') ? 'active' : '' %>">
+                    <i class="fas fa-user-friends"></i>
+                    <span>Subusers</span>
+                </a>
+                
+                <a href="/servers/<%= server.id %>/startup" 
+                   class="nav-item <%= (typeof activePage !== 'undefined' && activePage === 'startup') ? 'active' : '' %>">
+                    <i class="fas fa-rocket"></i>
+                    <span>Startup</span>
+                </a>
+                
+                <a href="/servers/<%= server.id %>/settings" 
+                   class="nav-item <%= (typeof activePage !== 'undefined' && activePage === 'settings') ? 'active' : '' %>">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+            
+        <!-- ADMIN AREA CONTEXT -->
+        <% } else if (isInAdminArea && isAdminUser) { %>
+            <div class="nav-section">
+                <a href="/dashboard" class="nav-item nav-item-back" style="background: var(--bg-hover); color: var(--accent-primary); font-weight: 600;">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to Dashboard</span>
+                </a>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-section-title">
+                    <i class="fas fa-shield-halved"></i>
+                    ADMIN PANEL
+                </div>
+                
+                <a href="/admin" 
+                   class="nav-item <%= currentPath === '/admin' ? 'active' : '' %>">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Overview</span>
+                </a>
+                
+                <a href="/admin/users" 
+                   class="nav-item <%= (currentPath.startsWith('/admin/user')) ? 'active' : '' %>">
+                    <i class="fas fa-users-cog"></i>
+                    <span>User Management</span>
+                </a>
+                
+                <a href="/admin/servers" 
+                   class="nav-item <%= (currentPath.startsWith('/admin/server')) ? 'active' : '' %>">
+                    <i class="fas fa-server"></i>
+                    <span>Server Management</span>
+                </a>
+                
+                <a href="/admin/settings" 
+                   class="nav-item <%= currentPath === '/admin/settings' ? 'active' : '' %>">
+                    <i class="fas fa-cog"></i>
+                    <span>Panel Settings</span>
+                </a>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-section-title">
+                    <i class="fas fa-bolt"></i>
+                    QUICK ACTIONS
+                </div>
+                
+                <a href="/admin/users/create" class="nav-item <%= currentPath === '/admin/users/create' ? 'active' : '' %>">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Create User</span>
+                </a>
+                
+                <a href="/admin/servers/create" class="nav-item <%= currentPath === '/admin/servers/create' ? 'active' : '' %>">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Create Server</span>
+                </a>
+            </div>
+            
+        <!-- REGULAR DASHBOARD CONTEXT -->
+        <% } else { %>
+            <div class="nav-section">
+                <a href="/dashboard" 
+                   class="nav-item <%= currentPath === '/dashboard' ? 'active' : '' %>">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+
+            <% if (isAdminUser) { %>
+                <div class="nav-section">
+                    <div class="nav-section-title">
+                        <i class="fas fa-shield-halved"></i>
+                        ADMINISTRATION
+                    </div>
+                    
+                    <a href="/admin" class="nav-item">
+                        <i class="fas fa-crown"></i>
+                        <span>Admin Panel</span>
+                    </a>
+                </div>
+            <% } %>
+        <% } %>
+
+        <!-- ACCOUNT SECTION (Always visible at bottom) -->
+        <div class="nav-section" style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-primary);">
+            <div class="nav-section-title">
+                <i class="fas fa-user"></i>
+                ACCOUNT
+            </div>
+            
+            <a href="/profile" class="nav-item <%= currentPath === '/profile' ? 'active' : '' %>">
+                <i class="fas fa-user-cog"></i>
+                <span>Profile Settings</span>
+            </a>
+            
+            <a href="/notifications" class="nav-item <%= currentPath === '/notifications' ? 'active' : '' %>">
+                <i class="fas fa-bell"></i>
+                <span>Notifications</span>
+                <% if (typeof unreadNotifications !== 'undefined' && unreadNotifications > 0) { %>
+                    <span class="badge badge-primary" style="margin-left: auto; background: var(--danger); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700;"><%= unreadNotifications %></span>
+                <% } %>
+            </a>
+        </div>
+    </nav>
+
+    <div class="sidebar-footer">
+        <a href="/auth/logout" class="nav-item" style="color: var(--danger);">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </a>
+        <div class="sidebar-copyright">
+            &copy; <%= new Date().getFullYear() %> <%= settings.panelName %>
+        </div>
+    </div>
+</aside>
+
+<!-- Mobile Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- Mobile Menu Button -->
+<button class="mobile-menu-btn" onclick="toggleSidebar()">
+    <i class="fas fa-bars"></i>
+</button>
+
+<script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+    document.body.classList.toggle('sidebar-open');
+}
+
+// Close sidebar when clicking on a link (mobile)
+document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+    item.addEventListener('click', function() {
+        if (window.innerWidth <= 768) {
+            toggleSidebar();
+        }
+    });
+});
+
+// Close sidebar on window resize if desktop
+window.addEventListener('resize', function() {
+    if (window.innerWidth > 768) {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+        document.body.classList.remove('sidebar-open');
+    }
+});
+</script>

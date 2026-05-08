@@ -1,0 +1,398 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-plug"></i>
+            Plugins
+        </h1>
+        <p class="page-subtitle"><%= server.name %></p>
+    </div>
+    <div class="page-actions">
+        <a href="/servers/<%= server.id %>/plugins/marketplace" class="btn btn-primary">
+            <i class="fas fa-store"></i>
+            Browse Marketplace
+        </a>
+        <button class="btn btn-secondary" onclick="showUploadModal()">
+            <i class="fas fa-upload"></i>
+            Upload Plugin
+        </button>
+    </div>
+</div>
+
+<!-- Success/Error Messages -->
+<% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        <span><%= success %></span>
+    </div>
+<% } %>
+<% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-circle"></i>
+        <span><%= error %></span>
+    </div>
+<% } %>
+
+<!-- Installed Plugins -->
+<div class="card">
+    <div class="card-header">
+        <h3>Installed Plugins (<%= plugins ? plugins.length : 0 %>)</h3>
+    </div>
+    <% if (plugins && plugins.length > 0) { %>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">Plugin</th>
+                        <th style="width: 15%;">Version</th>
+                        <th style="width: 15%;">Size</th>
+                        <th style="width: 15%;">Status</th>
+                        <th style="width: 15%; text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% plugins.forEach(plugin => { %>
+                        <tr>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div style="width: 40px; height: 40px; border-radius: 8px; background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                        <i class="fas fa-puzzle-piece" style="color: var(--primary); font-size: 18px;"></i>
+                                    </div>
+                                    <div style="min-width: 0; flex: 1;">
+                                        <strong style="display: block; font-size: 15px;"><%= plugin.name %></strong>
+                                        <% if (plugin.description) { %>
+                                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                <%= plugin.description %>
+                                            </div>
+                                        <% } %>
+                                        <% if (plugin.author) { %>
+                                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                                by <%= plugin.author %>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge <%= plugin.version === 'Unknown' ? 'badge-secondary' : 'badge-info' %>">
+                                    <%= plugin.version %>
+                                </span>
+                            </td>
+                            <td>
+                                <span style="font-family: monospace; font-size: 13px;">
+                                    <%= plugin.formattedSize %>
+                                </span>
+                            </td>
+                            <td>
+                                <% if (plugin.enabled) { %>
+                                    <span class="badge badge-success">
+                                        <i class="fas fa-check-circle"></i> Enabled
+                                    </span>
+                                <% } else { %>
+                                    <span class="badge badge-danger">
+                                        <i class="fas fa-times-circle"></i> Disabled
+                                    </span>
+                                <% } %>
+                            </td>
+                            <td style="text-align: center;">
+                                <div style="display: flex; gap: 8px; justify-content: center;">
+                                    <% if (plugin.website) { %>
+                                        <a href="<%= plugin.website %>" target="_blank" class="btn-icon btn-info" title="Visit Website">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    <% } %>
+                                    <button class="btn-icon btn-danger" onclick="deletePlugin('<%= plugin.filename %>', '<%= plugin.name %>')" title="Delete Plugin">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    <% } else { %>
+        <div class="card-body">
+            <div class="empty-state">
+                <i class="fas fa-plug"></i>
+                <h3>No Plugins Installed</h3>
+                <p>Get started by browsing the marketplace or uploading a plugin</p>
+                <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
+                    <a href="/servers/<%= server.id %>/plugins/marketplace" class="btn btn-primary">
+                        <i class="fas fa-store"></i>
+                        Browse Marketplace
+                    </a>
+                    <button class="btn btn-secondary" onclick="showUploadModal()">
+                        <i class="fas fa-upload"></i>
+                        Upload Plugin
+                    </button>
+                </div>
+            </div>
+        </div>
+    <% } %>
+</div>
+
+<!-- Plugin Info -->
+<div class="card">
+    <div class="card-header">
+        <h3>Plugin Information</h3>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info" style="margin-bottom: 16px;">
+            <i class="fas fa-info-circle"></i>
+            <span>Plugins require a Paper, Spigot, or Bukkit server. Vanilla servers do not support plugins.</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+            <div>
+                <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--primary);">
+                    <i class="fas fa-download"></i> Installing Plugins
+                </h4>
+                <ul style="color: var(--text-secondary); font-size: 13px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                    <li>Browse marketplace for popular plugins</li>
+                    <li>Upload .jar files directly</li>
+                    <li>Restart server after installation</li>
+                </ul>
+            </div>
+            <div>
+                <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--success);">
+                    <i class="fas fa-check-circle"></i> Best Practices
+                </h4>
+                <ul style="color: var(--text-secondary); font-size: 13px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                    <li>Check plugin compatibility</li>
+                    <li>Read plugin documentation</li>
+                    <li>Keep plugins updated</li>
+                </ul>
+            </div>
+            <div>
+                <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--warning);">
+                    <i class="fas fa-exclamation-triangle"></i> Important Notes
+                </h4>
+                <ul style="color: var(--text-secondary); font-size: 13px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                    <li>Only use trusted sources</li>
+                    <li>Backup before major changes</li>
+                    <li>Monitor server performance</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div id="uploadModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3>Upload Plugin</h3>
+            <button class="modal-close" onclick="closeUploadModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="uploadForm" onsubmit="uploadPlugin(event)" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label class="form-label">Select Plugin (.jar file)</label>
+                    <input type="file" name="plugin" class="form-control" accept=".jar" required>
+                </div>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Only upload plugins from trusted sources</span>
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeUploadModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="uploadBtn">
+                        <i class="fas fa-upload"></i>
+                        Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function showUploadModal() {
+    document.getElementById('uploadModal').style.display = 'flex';
+}
+
+function closeUploadModal() {
+    document.getElementById('uploadModal').style.display = 'none';
+    document.getElementById('uploadForm').reset();
+}
+
+function uploadPlugin(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const uploadBtn = document.getElementById('uploadBtn');
+    
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+    
+    fetch('/servers/<%= server.id %>/plugins/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('success', 'Plugin uploaded successfully! Restart the server to load it.');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showNotification('error', data.error || 'Failed to upload plugin');
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showNotification('error', 'An error occurred during upload');
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
+    });
+}
+
+function deletePlugin(filename, pluginName) {
+    if (!confirm(`Delete plugin "${pluginName}"?\n\nThe server must be restarted for changes to take effect.`)) return;
+    
+    fetch('/servers/<%= server.id %>/plugins/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('success', 'Plugin deleted successfully!');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification('error', data.error || 'Failed to delete plugin');
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showNotification('error', 'An error occurred');
+    });
+}
+
+function showNotification(type, message) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+    
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass}`;
+    alert.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 500px; animation: slideIn 0.3s ease-out; box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
+    alert.innerHTML = `
+        <i class="fas fa-${icon}"></i>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        alert.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => alert.remove(), 300);
+    }, 3000);
+}
+
+// Close modal on outside click
+document.getElementById('uploadModal').addEventListener('click', function(e) {
+    if (e.target === this) closeUploadModal();
+});
+</script>
+
+<style>
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    width: 90%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s;
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+</style>
+
+<%- include('../partials/footer') %>

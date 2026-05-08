@@ -1,0 +1,345 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-bell"></i>
+            Notifications
+            <% if (unreadCount > 0) { %>
+                <span class="badge badge-primary"><%= unreadCount %></span>
+            <% } %>
+        </h1>
+        <p class="page-subtitle">Stay updated with your account and server activities</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-outline" onclick="markAllAsRead()">
+            <i class="fas fa-check-double"></i>
+            Mark All Read
+        </button>
+        <button class="btn btn-outline" onclick="clearAllNotifications()">
+            <i class="fas fa-trash"></i>
+            Clear All
+        </button>
+        <a href="/notifications/settings" class="btn btn-primary">
+            <i class="fas fa-cog"></i>
+            Settings
+        </a>
+    </div>
+</div>
+
+<!-- Notification Statistics -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-bell"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value"><%= stats.total %></div>
+            <div class="stat-label">Total Notifications</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon unread">
+            <i class="fas fa-bell"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value"><%= stats.unread %></div>
+            <div class="stat-label">Unread</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-calendar-day"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value"><%= stats.today %></div>
+            <div class="stat-label">Today</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-calendar-week"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value"><%= stats.thisWeek %></div>
+            <div class="stat-label">This Week</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters and Controls -->
+<div class="notification-controls">
+    <div class="filter-group">
+        <label>Filter:</label>
+        <select id="filterSelect" class="form-control" onchange="applyFilters()">
+            <option value="all" <%= currentFilter === 'all' ? 'selected' : '' %>>All Notifications</option>
+            <option value="unread" <%= currentFilter === 'unread' ? 'selected' : '' %>>Unread Only</option>
+            <option value="read" <%= currentFilter === 'read' ? 'selected' : '' %>>Read Only</option>
+        </select>
+    </div>
+    
+    <div class="filter-group">
+        <label>Category:</label>
+        <select id="categorySelect" class="form-control" onchange="applyFilters()">
+            <option value="all" <%= currentCategory === 'all' ? 'selected' : '' %>>All Categories</option>
+            <option value="system" <%= currentCategory === 'system' ? 'selected' : '' %>>System</option>
+            <option value="account" <%= currentCategory === 'account' ? 'selected' : '' %>>Account</option>
+            <option value="server" <%= currentCategory === 'server' ? 'selected' : '' %>>Server</option>
+            <option value="security" <%= currentCategory === 'security' ? 'selected' : '' %>>Security</option>
+            <option value="maintenance" <%= currentCategory === 'maintenance' ? 'selected' : '' %>>Maintenance</option>
+        </select>
+    </div>
+    
+    <div class="filter-group">
+        <button class="btn btn-outline" onclick="refreshNotifications()">
+            <i class="fas fa-sync-alt"></i>
+            Refresh
+        </button>
+    </div>
+</div>
+
+<!-- Notifications List -->
+<div class="card">
+    <div class="card-body">
+        <div id="notificationsList">
+            <% if (notifications && notifications.length > 0) { %>
+                <% notifications.forEach(notification => { %>
+                    <div class="notification-item <%= notification.is_read ? 'read' : 'unread' %>" 
+                         data-id="<%= notification.id %>" 
+                         data-category="<%= notification.category %>"
+                         data-type="<%= notification.type %>">
+                        
+                        <div class="notification-icon">
+                            <i class="fas fa-<%= notification.icon || getNotificationIcon(notification.type, notification.category) %>"></i>
+                        </div>
+                        
+                        <div class="notification-content">
+                            <div class="notification-header">
+                                <h4 class="notification-title"><%= notification.title %></h4>
+                                <div class="notification-meta">
+                                    <span class="notification-category badge badge-<%= getCategoryColor(notification.category) %>">
+                                        <%= notification.category %>
+                                    </span>
+                                    <span class="notification-time" title="<%= new Date(notification.created_at).toLocaleString() %>">
+                                        <%= formatTimeAgo(notification.created_at) %>
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="notification-message">
+                                <%= notification.message %>
+                            </div>
+                            
+                            <% if (notification.action_url && notification.action_text) { %>
+                                <div class="notification-actions">
+                                    <a href="<%= notification.action_url %>" class="btn btn-sm btn-primary">
+                                        <%= notification.action_text %>
+                                    </a>
+                                </div>
+                            <% } %>
+                        </div>
+                        
+                        <div class="notification-controls">
+                            <% if (!notification.is_read) { %>
+                                <button class="btn btn-sm btn-outline" onclick="markAsRead('<%= notification.id %>')" title="Mark as read">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            <% } %>
+                            <button class="btn btn-sm btn-outline" onclick="deleteNotification('<%= notification.id %>')" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-bell-slash"></i>
+                    </div>
+                    <h3>No notifications found</h3>
+                    <p>You're all caught up! New notifications will appear here.</p>
+                </div>
+            <% } %>
+        </div>
+        
+        <!-- Pagination -->
+        <% if (pagination && pagination.pages > 1) { %>
+            <div class="pagination-wrapper">
+                <nav class="pagination">
+                    <% if (pagination.hasPrev) { %>
+                        <a href="?page=<%= pagination.page - 1 %>&filter=<%= currentFilter %>&category=<%= currentCategory %>" 
+                           class="pagination-btn">
+                            <i class="fas fa-chevron-left"></i>
+                            Previous
+                        </a>
+                    <% } %>
+                    
+                    <span class="pagination-info">
+                        Page <%= pagination.page %> of <%= pagination.pages %>
+                        (<%= pagination.total %> total)
+                    </span>
+                    
+                    <% if (pagination.hasNext) { %>
+                        <a href="?page=<%= pagination.page + 1 %>&filter=<%= currentFilter %>&category=<%= currentCategory %>" 
+                           class="pagination-btn">
+                            Next
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    <% } %>
+                </nav>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<!-- Category Breakdown -->
+<% if (stats.categories && stats.categories.length > 0) { %>
+    <div class="row">
+        <div class="col-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>
+                        <i class="fas fa-chart-pie"></i>
+                        Notifications by Category
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="category-breakdown">
+                        <% stats.categories.forEach(category => { %>
+                            <div class="category-item">
+                                <div class="category-info">
+                                    <span class="category-name">
+                                        <i class="fas fa-<%= getCategoryIcon(category.category) %>"></i>
+                                        <%= category.category %>
+                                    </span>
+                                    <span class="category-count"><%= category.count %></span>
+                                </div>
+                                <div class="category-bar">
+                                    <div class="category-progress" 
+                                         style="width: <%= (category.count / stats.total * 100) %>%; background: var(--<%= getCategoryColor(category.category) %>);"></div>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3>
+                        <i class="fas fa-chart-bar"></i>
+                        Notifications by Type
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="type-breakdown">
+                        <% stats.types.forEach(type => { %>
+                            <div class="type-item">
+                                <div class="type-info">
+                                    <span class="type-name">
+                                        <i class="fas fa-<%= getTypeIcon(type.type) %>"></i>
+                                        <%= type.type %>
+                                    </span>
+                                    <span class="type-count"><%= type.count %></span>
+                                </div>
+                                <div class="type-bar">
+                                    <div class="type-progress" 
+                                         style="width: <%= (type.count / stats.total * 100) %>%; background: var(--<%= getTypeColor(type.type) %>);"></div>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<% } %>
+
+<%- include('./notification-styles') %>
+<%- include('./notification-scripts') %>
+
+<%- include('../partials/footer') %>
+
+<%
+// Helper functions for EJS
+function getNotificationIcon(type, category) {
+    const icons = {
+        success: 'check-circle',
+        error: 'exclamation-circle',
+        warning: 'exclamation-triangle',
+        info: 'info-circle',
+        system: 'cog'
+    };
+    
+    const categoryIcons = {
+        system: 'cog',
+        account: 'user',
+        server: 'server',
+        security: 'shield-alt',
+        maintenance: 'tools'
+    };
+    
+    return categoryIcons[category] || icons[type] || 'bell';
+}
+
+function getCategoryColor(category) {
+    const colors = {
+        system: 'info',
+        account: 'primary',
+        server: 'success',
+        security: 'warning',
+        maintenance: 'secondary',
+        general: 'light'
+    };
+    return colors[category] || 'light';
+}
+
+function getCategoryIcon(category) {
+    const icons = {
+        system: 'cog',
+        account: 'user',
+        server: 'server',
+        security: 'shield-alt',
+        maintenance: 'tools',
+        general: 'bell'
+    };
+    return icons[category] || 'bell';
+}
+
+function getTypeIcon(type) {
+    const icons = {
+        success: 'check-circle',
+        error: 'exclamation-circle',
+        warning: 'exclamation-triangle',
+        info: 'info-circle',
+        system: 'cog'
+    };
+    return icons[type] || 'bell';
+}
+
+function getTypeColor(type) {
+    const colors = {
+        success: 'success',
+        error: 'danger',
+        warning: 'warning',
+        info: 'info',
+        system: 'secondary'
+    };
+    return colors[type] || 'primary';
+}
+
+function formatTimeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
+    
+    return date.toLocaleDateString();
+}
+%>

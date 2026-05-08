@@ -1,0 +1,394 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-user-edit"></i>
+            Edit User
+        </h1>
+        <p class="page-subtitle">Update user information and settings</p>
+    </div>
+    <a href="/admin/users" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to Users
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-8">
+        <div class="card">
+            <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 16px;">
+                        <%= editUser.username.charAt(0).toUpperCase() %>
+                    </div>
+                    <%= editUser.username %>
+                </h3>
+                <span class="badge <%= editUser.role === 'admin' ? 'badge-warning' : 'badge-info' %>">
+                    <i class="fas <%= editUser.role === 'admin' ? 'fa-crown' : 'fa-user' %>"></i>
+                    <%= editUser.role %>
+                </span>
+            </div>
+            <div class="card-body">
+                <form id="editUserForm" method="post" action="/admin/users/<%= editUser.id %>/update">
+                    <input type="hidden" name="userId" value="<%= editUser.id %>">
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-user"></i>
+                            Username *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="text" name="username" class="form-control" value="<%= editUser.username %>" required minlength="3" maxlength="32" pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, underscores, and hyphens allowed">
+                            <i class="fas fa-user input-icon"></i>
+                        </div>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            3-32 characters, letters, numbers, underscores, and hyphens only
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-envelope"></i>
+                            Email Address *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="email" name="email" class="form-control" value="<%= editUser.email %>" required>
+                            <i class="fas fa-envelope input-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-user-tag"></i>
+                            Role *
+                        </label>
+                        <select name="role" class="form-control" required <%= editUser.id === user.id ? 'disabled' : '' %>>
+                            <option value="user" <%= editUser.role === 'user' ? 'selected' : '' %>>User - Regular panel user</option>
+                            <option value="admin" <%= editUser.role === 'admin' ? 'selected' : '' %>>Admin - Full panel access</option>
+                        </select>
+                        <% if (editUser.id === user.id) { %>
+                            <span class="form-help" style="color: var(--warning);">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                You cannot change your own role
+                            </span>
+                        <% } else { %>
+                            <span class="form-help">
+                                <i class="fas fa-info-circle"></i>
+                                Admins have full access to all panel features
+                            </span>
+                        <% } %>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-toggle-on"></i>
+                            Status
+                        </label>
+                        <select name="status" class="form-control" <%= editUser.id === user.id ? 'disabled' : '' %>>
+                            <option value="active" <%= (editUser.status === 'active' || !editUser.status) ? 'selected' : '' %>>Active - User can login</option>
+                            <option value="suspended" <%= editUser.status === 'suspended' ? 'selected' : '' %>>Suspended - User cannot login</option>
+                        </select>
+                        <% if (editUser.id === user.id) { %>
+                            <span class="form-help" style="color: var(--warning);">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                You cannot suspend yourself
+                            </span>
+                        <% } %>
+                    </div>
+
+                    <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 12px; border-left: 3px solid var(--info); margin-bottom: 24px;">
+                        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-key" style="color: var(--info);"></i>
+                            Change Password
+                        </div>
+                        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+                            Leave blank to keep current password
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label class="form-label">New Password</label>
+                            <div class="input-wrapper">
+                                <input type="password" name="newPassword" id="newPassword" class="form-control" placeholder="Enter new password" minlength="6">
+                                <i class="fas fa-lock input-icon"></i>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">Confirm New Password</label>
+                            <div class="input-wrapper">
+                                <input type="password" name="confirmPassword" id="confirmPassword" class="form-control" placeholder="Confirm new password" minlength="6">
+                                <i class="fas fa-lock-keyhole input-icon"></i>
+                            </div>
+                            <span class="form-help" id="passwordMatch"></span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 24px; border-top: 1px solid var(--border-primary);">
+                        <a href="/admin/users" class="btn btn-secondary">
+                            <i class="fas fa-times"></i>
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-save"></i>
+                            Update User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-4">
+        <!-- User Info Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-info-circle" style="color: var(--info);"></i>
+                    User Details
+                </h3>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">User ID</div>
+                        <div style="font-weight: 600; color: var(--text-primary); font-family: monospace;">#<%= editUser.id %></div>
+                    </div>
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Created</div>
+                        <div style="font-weight: 500; color: var(--text-primary);">
+                            <i class="fas fa-calendar"></i>
+                            <%= new Date(editUser.created_at).toLocaleDateString() %>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Current Status</div>
+                        <span class="badge <%= (editUser.status === 'active' || !editUser.status) ? 'badge-success' : 'badge-danger' %>">
+                            <i class="fas fa-circle" style="font-size: 8px;"></i>
+                            <%= editUser.status || 'active' %>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <% if (editUser.id !== user.id) { %>
+            <div class="card" style="border-color: var(--danger);">
+                <div class="card-header" style="background: rgba(239, 68, 68, 0.1); border-bottom-color: var(--danger);">
+                    <h3 style="display: flex; align-items: center; gap: 10px; color: var(--danger);">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Danger Zone
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div style="margin-bottom: 16px;">
+                        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Delete User</div>
+                        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+                            Permanently delete this user and all associated data. This action cannot be undone.
+                        </div>
+                        <button class="btn btn-danger w-full" onclick="deleteUser()">
+                            <i class="fas fa-trash"></i>
+                            Delete User
+                        </button>
+                    </div>
+                </div>
+            </div>
+        <% } %>
+
+        <!-- Help Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-question-circle" style="color: var(--info);"></i>
+                    Help
+                </h3>
+            </div>
+            <div class="card-body">
+                <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                    <p style="margin-bottom: 12px;">
+                        <strong>Changing Password:</strong> Leave the password fields blank to keep the current password.
+                    </p>
+                    <p style="margin-bottom: 12px;">
+                        <strong>Suspending Users:</strong> Suspended users cannot login but their data is preserved.
+                    </p>
+                    <p style="margin-bottom: 0;">
+                        <strong>Admin Role:</strong> Admins have full access to all panel features including user management.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+
+<script>
+// Password match validation
+document.getElementById('confirmPassword').addEventListener('input', function() {
+    const password = document.getElementById('newPassword').value;
+    const confirm = this.value;
+    const matchEl = document.getElementById('passwordMatch');
+    
+    if (confirm.length > 0 || password.length > 0) {
+        if (password === confirm) {
+            matchEl.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success);"></i> Passwords match';
+            matchEl.style.color = 'var(--success)';
+        } else {
+            matchEl.innerHTML = '<i class="fas fa-times-circle" style="color: var(--danger);"></i> Passwords do not match';
+            matchEl.style.color = 'var(--danger)';
+        }
+    } else {
+        matchEl.innerHTML = '';
+    }
+});
+
+// Form validation before submit
+document.getElementById('editUserForm').addEventListener('submit', function(e) {
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (newPassword && newPassword !== confirmPassword) {
+        e.preventDefault();
+        alert('Passwords do not match!');
+        return false;
+    }
+    
+    // Show loading state
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+    
+    // If password fields are empty, remove them from submission
+    if (!newPassword) {
+        document.getElementById('newPassword').removeAttribute('name');
+        document.getElementById('confirmPassword').removeAttribute('name');
+    } else {
+        // Rename newPassword to password for backend
+        document.getElementById('newPassword').setAttribute('name', 'password');
+    }
+});
+
+function deleteUser() {
+    const username = '<%= editUser.username %>';
+    
+    console.log('Delete user requested:', username);
+    
+    if (!confirm(`Are you sure you want to delete user "${username}"?\n\nThis will:\n• Delete the user account\n• Remove all associated servers\n• This action cannot be undone`)) {
+        console.log('Delete cancelled by user');
+        return;
+    }
+
+    const secondConfirm = prompt(`Type "${username}" to confirm deletion:`);
+    if (secondConfirm !== username) {
+        console.log('Delete cancelled - username mismatch');
+        showToast('Deletion cancelled - username did not match', 'error');
+        return;
+    }
+    
+    console.log('Sending delete request');
+
+    fetch(`/admin/users/<%= editUser.id %>/delete`, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        redirect: 'manual'
+    })
+    .then(async res => {
+        console.log('Delete response received:', {
+            status: res.status,
+            type: res.type,
+            ok: res.ok
+        });
+        
+        // Handle redirect responses (302)
+        if (res.type === 'opaqueredirect' || res.status === 302 || res.status === 0) {
+            console.log('Redirect detected - session expired');
+            showToast('Session expired. Please login again.', 'error');
+            setTimeout(() => {
+                window.location.href = '/auth/login';
+            }, 1500);
+            return null;
+        }
+        
+        // Check if response is JSON
+        const contentType = res.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return res.json();
+        } else {
+            throw new Error('Invalid response format');
+        }
+    })
+    .then(data => {
+        if (!data) return; // Redirect case
+        
+        console.log('Delete response data:', data);
+        
+        if (data.success) {
+            showToast('✓ User deleted successfully', 'success');
+            // Small delay to show toast, then redirect
+            setTimeout(() => {
+                window.location.href = '/admin/users';
+            }, 500);
+        } else {
+            showToast('Error: ' + (data.error || 'Failed to delete user'), 'error');
+        }
+    })
+    .catch(err => {
+        console.error('Delete error:', err);
+        showToast('An error occurred: ' + err.message, 'error');
+    });
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type}`;
+    toast.style.cssText = `
+        position: fixed; 
+        top: 20px; 
+        right: 20px; 
+        z-index: 9999; 
+        animation: slideInRight 0.3s ease; 
+        min-width: 320px;
+        max-width: 500px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 500;
+    `;
+    
+    const iconClass = type === 'success' ? 'fa-check-circle' : 
+                     type === 'error' ? 'fa-exclamation-circle' : 
+                     'fa-info-circle';
+    
+    toast.innerHTML = `
+        <i class="fas ${iconClass}" style="font-size: 20px;"></i>
+        <span style="flex: 1;">${message}</span>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
+</script>

@@ -1,0 +1,376 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-chart-line"></i>
+            <%= server.name %>
+        </h1>
+        <p class="page-subtitle">Server Overview</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn <%= server.status === 'running' ? 'btn-danger' : 'btn-success' %>" onclick="toggleServer()">
+            <i class="fas fa-<%= server.status === 'running' ? 'stop' : 'play' %>"></i>
+            <%= server.status === 'running' ? 'Stop' : 'Start' %>
+        </button>
+        <button class="btn btn-warning" onclick="restartServer()" <%= server.status !== 'running' ? 'disabled' : '' %>>
+            <i class="fas fa-sync-alt"></i>
+            Restart
+        </button>
+    </div>
+</div>
+
+<!-- Server Status -->
+<div class="card">
+    <div class="card-body">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div class="server-status">
+                    <span class="status-dot <%= server.status === 'running' ? 'online' : 'offline' %>" id="statusDot"></span>
+                    <span style="font-size: 18px; font-weight: 600;" id="statusText">
+                        <%= server.status === 'running' ? 'Online' : 'Offline' %>
+                    </span>
+                </div>
+                <div style="color: var(--text-secondary);" id="uptimeDisplay">
+                    <i class="fas fa-clock"></i>
+                    <span id="uptimeLabel"><%= server.status === 'running' ? 'Uptime:' : 'Status:' %></span> 
+                    <span id="uptime" style="<%= server.status === 'running' ? 'color: var(--success);' : 'color: var(--text-muted);' %>">
+                        <% if (server.status === 'running') { %>
+                            Calculating...
+                        <% } else { %>
+                            Offline
+                        <% } %>
+                    </span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                <div style="color: var(--text-secondary); font-size: 14px;">
+                    <i class="fas fa-network-wired"></i>
+                    Port: <strong><%= server.port %></strong>
+                </div>
+                <div style="color: var(--text-secondary); font-size: 14px;">
+                    <i class="fas fa-cube"></i>
+                    Type: <strong><%= server.server_type || 'vanilla' %></strong>
+                </div>
+                <div style="color: var(--text-secondary); font-size: 14px;">
+                    <i class="fas fa-code-branch"></i>
+                    Version: <strong><%= server.version || 'Latest' %></strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Grid with Progress Bars -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon info">
+            <i class="fas fa-microchip"></i>
+        </div>
+        <div class="stat-content" style="flex: 1;">
+            <div class="stat-label">CPU Usage</div>
+            <div class="stat-value" id="cpuUsage">0%</div>
+            <div style="width: 100%; height: 6px; background: var(--bg-tertiary); border-radius: 3px; margin-top: 8px; overflow: hidden;">
+                <div id="cpuBar" style="height: 100%; background: var(--info); width: 0%; transition: width 0.3s;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon warning">
+            <i class="fas fa-memory"></i>
+        </div>
+        <div class="stat-content" style="flex: 1;">
+            <div class="stat-label">RAM Usage</div>
+            <div class="stat-value">
+                <span id="ramUsage">0 MB</span>
+                <span style="font-size: 14px; color: var(--text-secondary);">/ <%= server.ram %> MB</span>
+            </div>
+            <div style="width: 100%; height: 6px; background: var(--bg-tertiary); border-radius: 3px; margin-top: 8px; overflow: hidden;">
+                <div id="ramBar" style="height: 100%; background: var(--warning); width: 0%; transition: width 0.3s;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon success">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-content" style="flex: 1;">
+            <div class="stat-label">Players Online</div>
+            <div class="stat-value">
+                <span id="playersOnline">0</span>
+                <span style="font-size: 14px; color: var(--text-secondary);">/ <span id="maxPlayers">20</span></span>
+            </div>
+            <div style="width: 100%; height: 6px; background: var(--bg-tertiary); border-radius: 3px; margin-top: 8px; overflow: hidden;">
+                <div id="playersBar" style="height: 100%; background: var(--success); width: 0%; transition: width 0.3s;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon primary">
+            <i class="fas fa-hdd"></i>
+        </div>
+        <div class="stat-content" style="flex: 1;">
+            <div class="stat-label">Disk Usage</div>
+            <div class="stat-value" id="diskUsage">0 MB</div>
+            <div style="width: 100%; height: 6px; background: var(--bg-tertiary); border-radius: 3px; margin-top: 8px; overflow: hidden;">
+                <div id="diskBar" style="height: 100%; background: var(--accent-primary); width: 0%; transition: width 0.3s, background 0.3s;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Server Info -->
+<div class="row">
+    <div class="col-6">
+        <div class="card">
+            <div class="card-header">
+                <h3>Server Information</h3>
+            </div>
+            <div class="card-body">
+                <div class="system-info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Server Type</span>
+                        <span class="info-value"><%= server.server_type || 'vanilla' %></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Version</span>
+                        <span class="info-value"><%= server.version || 'Latest' %></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Allocated RAM</span>
+                        <span class="info-value"><%= server.ram %> MB</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Port</span>
+                        <span class="info-value"><%= server.port %></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Server ID</span>
+                        <span class="info-value">#<%= server.id %></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Created</span>
+                        <span class="info-value"><%= new Date(server.created_at).toLocaleDateString() %></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6">
+        <div class="card">
+            <div class="card-header">
+                <h3>Recent Console Output</h3>
+            </div>
+            <div class="card-body">
+                <div id="consoleOutput" style="background: var(--bg-primary); border-radius: 8px; padding: 16px; font-family: 'Courier New', monospace; font-size: 12px; max-height: 300px; overflow-y: auto;">
+                    <% if (typeof logContent !== 'undefined' && logContent) { %>
+                        <pre style="margin: 0; color: var(--text-secondary); white-space: pre-wrap;"><%= logContent %></pre>
+                    <% } else { %>
+                        <p style="color: var(--text-muted); margin: 0;">No console output available</p>
+                    <% } %>
+                </div>
+                <div style="margin-top: 12px;">
+                    <a href="/servers/<%= server.id %>/console" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-terminal"></i>
+                        View Full Console
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const serverId = <%= server.id %>;
+const socket = io();
+
+// Join server room
+socket.emit('join-server', serverId);
+
+// Format uptime from seconds (same as main dashboard)
+function formatUptime(seconds) {
+    if (!seconds || seconds <= 0) return 'Offline';
+    
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+}
+
+// Fetch and update stats from API (same as main dashboard)
+async function updateStats() {
+    try {
+        const response = await fetch(`/servers/${serverId}/stats`);
+        const data = await response.json();
+        
+        if (data.success && data.stats) {
+            const stats = data.stats;
+            
+            // Update status
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const uptimeLabel = document.getElementById('uptimeLabel');
+            
+            if (stats.status === 'running') {
+                statusDot.className = 'status-dot online';
+                statusText.textContent = 'Online';
+                statusText.style.color = 'var(--success)';
+                uptimeLabel.textContent = 'Uptime:';
+            } else {
+                statusDot.className = 'status-dot offline';
+                statusText.textContent = 'Offline';
+                statusText.style.color = 'var(--danger)';
+                uptimeLabel.textContent = 'Status:';
+            }
+            
+            // Update CPU
+            const cpuPercent = stats.cpu || 0;
+            document.getElementById('cpuUsage').textContent = cpuPercent.toFixed(1) + '%';
+            document.getElementById('cpuBar').style.width = Math.min(cpuPercent, 100) + '%';
+            
+            // Update RAM - memory is in bytes from API, convert to MB
+            const ramMB = stats.memory ? Math.round(stats.memory / 1024 / 1024) : 0;
+            document.getElementById('ramUsage').textContent = ramMB + ' MB';
+            const ramPercent = (<%= server.ram %> > 0) ? (ramMB / <%= server.ram %> * 100) : 0;
+            document.getElementById('ramBar').style.width = Math.min(ramPercent, 100) + '%';
+            
+            // Update Players
+            document.getElementById('playersOnline').textContent = stats.players || 0;
+            document.getElementById('maxPlayers').textContent = stats.maxPlayers || 20;
+            const maxPlayers = stats.maxPlayers || 20;
+            const playersPercent = maxPlayers > 0 ? (stats.players / maxPlayers * 100) : 0;
+            document.getElementById('playersBar').style.width = Math.min(playersPercent, 100) + '%';
+            
+            // Update Disk - diskMB is already in MB from API
+            const diskMB = stats.diskMB || 0;
+            document.getElementById('diskUsage').textContent = Math.round(diskMB) + ' MB';
+            // Calculate percentage based on 10GB max (10 * 1024 MB = 10240 MB)
+            const diskPercent = diskMB > 0 ? Math.min((diskMB / (10 * 1024) * 100), 100) : 0;
+            const diskBar = document.getElementById('diskBar');
+            // Set minimum 2% width if there's any disk usage, so it's visible
+            const displayPercent = diskMB > 0 ? Math.max(diskPercent, 2) : 0;
+            diskBar.style.width = displayPercent.toFixed(1) + '%';
+            
+            // Color code the disk bar based on usage
+            if (diskPercent > 80) {
+                diskBar.style.background = 'var(--danger)';
+            } else if (diskPercent > 60) {
+                diskBar.style.background = 'var(--warning)';
+            } else {
+                diskBar.style.background = 'var(--accent-primary)';
+            }
+            
+            // Update Uptime (same as main dashboard)
+            const uptimeEl = document.getElementById('uptime');
+            if (stats.status === 'running' && stats.uptime > 0) {
+                uptimeEl.textContent = formatUptime(stats.uptime);
+                uptimeEl.style.color = 'var(--success)';
+            } else {
+                uptimeEl.textContent = 'Offline';
+                uptimeEl.style.color = 'var(--text-muted)';
+            }
+        }
+    } catch (error) {
+        console.error('Failed to fetch stats:', error);
+    }
+}
+
+// Update stats every 5 seconds (same as main dashboard)
+updateStats();
+setInterval(updateStats, 5000);
+
+// Handle console output
+socket.on('console-output', (data) => {
+    if (data.serverId === serverId) {
+        const consoleOutput = document.getElementById('consoleOutput');
+        const pre = document.createElement('pre');
+        pre.style.margin = '0';
+        pre.style.color = 'var(--text-secondary)';
+        pre.style.whiteSpace = 'pre-wrap';
+        pre.textContent = data.line;
+        consoleOutput.appendChild(pre);
+        
+        // Auto-scroll to bottom
+        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        
+        // Keep only last 50 lines
+        while (consoleOutput.children.length > 50) {
+            consoleOutput.removeChild(consoleOutput.firstChild);
+        }
+    }
+});
+
+function toggleServer() {
+    const action = '<%= server.status %>' === 'running' ? 'stop' : 'start';
+    if (!confirm(`Are you sure you want to ${action} this server?`)) return;
+    
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${action === 'start' ? 'Starting' : 'Stopping'}...`;
+    
+    fetch(`/servers/${serverId}/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            alert('Error: ' + (data.error || `Failed to ${action} server`));
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fas fa-${action === 'start' ? 'play' : 'stop'}"></i> ${action === 'start' ? 'Start' : 'Stop'}`;
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('An error occurred');
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fas fa-${action === 'start' ? 'play' : 'stop'}"></i> ${action === 'start' ? 'Start' : 'Stop'}`;
+    });
+}
+
+function restartServer() {
+    if (!confirm('Are you sure you want to restart this server?')) return;
+    
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Restarting...';
+    
+    fetch(`/servers/${serverId}/restart`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('Server is restarting...');
+            setTimeout(() => location.reload(), 5000);
+        } else {
+            alert('Error: ' + (data.error || 'Failed to restart server'));
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sync-alt"></i> Restart';
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('An error occurred');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sync-alt"></i> Restart';
+    });
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    socket.emit('leave-server', serverId);
+});
+</script>
+
+<%- include('../partials/footer') %>

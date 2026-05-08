@@ -1,0 +1,848 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-rocket"></i>
+            Startup Configuration
+        </h1>
+        <p class="page-subtitle"><%= server.name %></p>
+    </div>
+    <a href="/servers/<%= server.id %>/dashboard" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to Server
+    </a>
+</div>
+
+<!-- Startup Command Preview -->
+<div class="card card-gradient-primary">
+    <div class="card-header">
+        <h3><i class="fas fa-terminal"></i> Startup Command Preview</h3>
+    </div>
+    <div class="card-body">
+        <div class="command-preview" id="commandPreview">
+            <code>java <%= startup && startup.javaArgs ? startup.javaArgs : '-Xmx' + server.ram + 'M -Xms' + server.ram + 'M' %> -jar <%= startup && startup.jarFile ? startup.jarFile : 'server.jar' %> <%= startup && startup.additionalArgs ? startup.additionalArgs : 'nogui' %></code>
+        </div>
+        <small class="help-text">
+            <i class="fas fa-info-circle"></i>
+            This is the command that will be executed when starting your server
+        </small>
+    </div>
+</div>
+
+<!-- Startup Parameters -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-cog"></i> Startup Parameters</h3>
+        <span class="badge badge-info">Auto-Managed</span>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info">
+            <i class="fas fa-lock"></i>
+            <span>
+                <strong>Protected Configuration:</strong> Startup parameters are managed automatically based on your server type and allocated resources. Contact an administrator if changes are needed.
+            </span>
+        </div>
+
+        <div class="startup-params-grid">
+            <div class="param-item">
+                <div class="param-icon">
+                    <i class="fas fa-memory"></i>
+                </div>
+                <div class="param-content">
+                    <span class="param-label">Java Arguments</span>
+                    <span class="param-value"><%= startup && startup.javaArgs ? startup.javaArgs : '-Xmx' + server.ram + 'M -Xms' + server.ram + 'M' %></span>
+                    <small class="param-help">JVM memory allocation and performance flags</small>
+                </div>
+            </div>
+
+            <div class="param-item">
+                <div class="param-icon">
+                    <i class="fas fa-file-archive"></i>
+                </div>
+                <div class="param-content">
+                    <span class="param-label">Server JAR File</span>
+                    <span class="param-value"><%= startup && startup.jarFile ? startup.jarFile : 'server.jar' %></span>
+                    <small class="param-help">Main server executable file</small>
+                </div>
+            </div>
+
+            <div class="param-item">
+                <div class="param-icon">
+                    <i class="fas fa-terminal"></i>
+                </div>
+                <div class="param-content">
+                    <span class="param-label">Additional Arguments</span>
+                    <span class="param-value"><%= startup && startup.additionalArgs ? startup.additionalArgs : 'nogui' %></span>
+                    <small class="param-help">Extra server launch arguments</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Server Properties -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-sliders-h"></i> Server Properties</h3>
+        <span class="badge badge-success">Editable</span>
+    </div>
+    <div class="card-body">
+        <form id="propertiesForm" onsubmit="saveProperties(event)">
+            <div class="properties-grid">
+                <!-- Left Column -->
+                <div class="properties-column">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-users"></i>
+                            Max Players
+                        </label>
+                        <input type="number" name="max-players" class="form-control" value="<%= properties && properties['max-players'] ? properties['max-players'] : 20 %>" min="1" max="1000">
+                        <small class="help-text">Maximum number of players allowed</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-gamepad"></i>
+                            Gamemode
+                        </label>
+                        <select name="gamemode" class="form-control">
+                            <option value="survival" <%= properties && properties.gamemode === 'survival' ? 'selected' : '' %>>Survival</option>
+                            <option value="creative" <%= properties && properties.gamemode === 'creative' ? 'selected' : '' %>>Creative</option>
+                            <option value="adventure" <%= properties && properties.gamemode === 'adventure' ? 'selected' : '' %>>Adventure</option>
+                            <option value="spectator" <%= properties && properties.gamemode === 'spectator' ? 'selected' : '' %>>Spectator</option>
+                        </select>
+                        <small class="help-text">Default gamemode for new players</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-skull-crossbones"></i>
+                            Difficulty
+                        </label>
+                        <select name="difficulty" class="form-control">
+                            <option value="peaceful" <%= properties && properties.difficulty === 'peaceful' ? 'selected' : '' %>>Peaceful</option>
+                            <option value="easy" <%= properties && properties.difficulty === 'easy' ? 'selected' : '' %>>Easy</option>
+                            <option value="normal" <%= properties && properties.difficulty === 'normal' ? 'selected' : '' %>>Normal</option>
+                            <option value="hard" <%= properties && properties.difficulty === 'hard' ? 'selected' : '' %>>Hard</option>
+                        </select>
+                        <small class="help-text">Game difficulty level</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-eye"></i>
+                            View Distance
+                        </label>
+                        <input type="number" name="view-distance" class="form-control" value="<%= properties && properties['view-distance'] ? properties['view-distance'] : 10 %>" min="3" max="32">
+                        <small class="help-text">Chunks visible to players (3-32)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-comment"></i>
+                            MOTD (Message of the Day)
+                        </label>
+                        <input type="text" name="motd" class="form-control" value="<%= properties && properties.motd ? properties.motd : 'A Minecraft Server' %>" placeholder="A Minecraft Server">
+                        <small class="help-text">Server description in server list</small>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="properties-column">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-globe"></i>
+                            Level Name
+                        </label>
+                        <input type="text" name="level-name" class="form-control" value="<%= properties && properties['level-name'] ? properties['level-name'] : 'world' %>" placeholder="world">
+                        <small class="help-text">World/level folder name</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-mountain"></i>
+                            Level Type
+                        </label>
+                        <select name="level-type" class="form-control">
+                            <option value="default" <%= properties && properties['level-type'] === 'default' ? 'selected' : '' %>>Default</option>
+                            <option value="flat" <%= properties && properties['level-type'] === 'flat' ? 'selected' : '' %>>Flat</option>
+                            <option value="largeBiomes" <%= properties && properties['level-type'] === 'largeBiomes' ? 'selected' : '' %>>Large Biomes</option>
+                            <option value="amplified" <%= properties && properties['level-type'] === 'amplified' ? 'selected' : '' %>>Amplified</option>
+                        </select>
+                        <small class="help-text">World generation type</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-seedling"></i>
+                            Level Seed
+                        </label>
+                        <input type="text" name="level-seed" class="form-control" value="<%= properties && properties['level-seed'] ? properties['level-seed'] : '' %>" placeholder="Leave empty for random">
+                        <small class="help-text">World generation seed (optional)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-tachometer-alt"></i>
+                            Simulation Distance
+                        </label>
+                        <input type="number" name="simulation-distance" class="form-control" value="<%= properties && properties['simulation-distance'] ? properties['simulation-distance'] : 10 %>" min="3" max="32">
+                        <small class="help-text">Distance for mob spawning and updates (3-32)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-user-shield"></i>
+                            Max World Size
+                        </label>
+                        <input type="number" name="max-world-size" class="form-control" value="<%= properties && properties['max-world-size'] ? properties['max-world-size'] : 29999984 %>" min="1" max="29999984">
+                        <small class="help-text">Maximum world border radius</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Server Features Toggles -->
+            <div class="toggles-section">
+                <h4><i class="fas fa-toggle-on"></i> Server Features</h4>
+                <div class="toggles-grid">
+                    <label class="toggle-item">
+                        <input type="checkbox" name="pvp" <%= properties && properties.pvp !== 'false' ? 'checked' : '' %>>
+                        <span class="toggle-content">
+                            <i class="fas fa-swords"></i>
+                            <div>
+                                <strong>Enable PvP</strong>
+                                <small>Allow player vs player combat</small>
+                            </div>
+                        </span>
+                    </label>
+
+                    <label class="toggle-item">
+                        <input type="checkbox" name="online-mode" <%= properties && properties['online-mode'] !== 'false' ? 'checked' : '' %>>
+                        <span class="toggle-content">
+                            <i class="fas fa-shield-alt"></i>
+                            <div>
+                                <strong>Online Mode</strong>
+                                <small>Require Mojang authentication</small>
+                            </div>
+                        </span>
+                    </label>
+
+                    <label class="toggle-item">
+                        <input type="checkbox" name="white-list" <%= properties && properties['white-list'] === 'true' ? 'checked' : '' %>>
+                        <span class="toggle-content">
+                            <i class="fas fa-list"></i>
+                            <div>
+                                <strong>Whitelist</strong>
+                                <small>Only allow whitelisted players</small>
+                            </div>
+                        </span>
+                    </label>
+
+                    <label class="toggle-item">
+                        <input type="checkbox" name="allow-flight" <%= properties && properties['allow-flight'] === 'true' ? 'checked' : '' %>>
+                        <span class="toggle-content">
+                            <i class="fas fa-plane"></i>
+                            <div>
+                                <strong>Allow Flight</strong>
+                                <small>Enable flying in survival mode</small>
+                            </div>
+                        </span>
+                    </label>
+
+                    <label class="toggle-item">
+                        <input type="checkbox" name="spawn-monsters" <%= properties && properties['spawn-monsters'] !== 'false' ? 'checked' : '' %>>
+                        <span class="toggle-content">
+                            <i class="fas fa-ghost"></i>
+                            <div>
+                                <strong>Spawn Monsters</strong>
+                                <small>Enable hostile mob spawning</small>
+                            </div>
+                        </span>
+                    </label>
+
+                    <label class="toggle-item">
+                        <input type="checkbox" name="spawn-animals" <%= properties && properties['spawn-animals'] !== 'false' ? 'checked' : '' %>>
+                        <span class="toggle-content">
+                            <i class="fas fa-paw"></i>
+                            <div>
+                                <strong>Spawn Animals</strong>
+                                <small>Enable passive mob spawning</small>
+                            </div>
+                        </span>
+                    </label>
+
+                    <label class="toggle-item">
+                        <input type="checkbox" name="spawn-npcs" <%= properties && properties['spawn-npcs'] !== 'false' ? 'checked' : '' %>>
+                        <span class="toggle-content">
+                            <i class="fas fa-user-tie"></i>
+                            <div>
+                                <strong>Spawn NPCs</strong>
+                                <small>Enable villager spawning</small>
+                            </div>
+                        </span>
+                    </label>
+
+                    <label class="toggle-item">
+                        <input type="checkbox" name="enable-command-block" <%= properties && properties['enable-command-block'] === 'true' ? 'checked' : '' %>>
+                        <span class="toggle-content">
+                            <i class="fas fa-cube"></i>
+                            <div>
+                                <strong>Command Blocks</strong>
+                                <small>Enable command block usage</small>
+                            </div>
+                        </span>
+                    </label>
+
+                    <label class="toggle-item">
+                        <input type="checkbox" name="generate-structures" <%= properties && properties['generate-structures'] !== 'false' ? 'checked' : '' %>>
+                        <span class="toggle-content">
+                            <i class="fas fa-building"></i>
+                            <div>
+                                <strong>Generate Structures</strong>
+                                <small>Enable villages, temples, etc.</small>
+                            </div>
+                        </span>
+                    </label>
+
+                    <label class="toggle-item">
+                        <input type="checkbox" name="hardcore" <%= properties && properties.hardcore === 'true' ? 'checked' : '' %>>
+                        <span class="toggle-content">
+                            <i class="fas fa-skull"></i>
+                            <div>
+                                <strong>Hardcore Mode</strong>
+                                <small>Permanent death, locked to hard</small>
+                            </div>
+                        </span>
+                    </label>
+
+                    <label class="toggle-item">
+                        <input type="checkbox" name="allow-nether" <%= properties && properties['allow-nether'] !== 'false' ? 'checked' : '' %>>
+                        <span class="toggle-content">
+                            <i class="fas fa-fire"></i>
+                            <div>
+                                <strong>Allow Nether</strong>
+                                <small>Enable Nether dimension</small>
+                            </div>
+                        </span>
+                    </label>
+
+                    <label class="toggle-item">
+                        <input type="checkbox" name="enable-status" <%= properties && properties['enable-status'] !== 'false' ? 'checked' : '' %>>
+                        <span class="toggle-content">
+                            <i class="fas fa-signal"></i>
+                            <div>
+                                <strong>Server Status</strong>
+                                <small>Show in server list</small>
+                            </div>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Save Server Properties
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                    <i class="fas fa-undo"></i>
+                    Reset Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Important Information -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-info-circle"></i> Important Information</h3>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>
+                <strong>Restart Required:</strong> Server must be restarted for property changes to take effect
+            </span>
+        </div>
+        
+        <div class="system-info-grid">
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-rocket"></i>
+                    Startup Parameters
+                </span>
+                <span class="info-value">Control how the server process is launched and memory allocation</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-sliders-h"></i>
+                    Server Properties
+                </span>
+                <span class="info-value">Affect gameplay mechanics, world generation, and server behavior</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-shield-alt"></i>
+                    Online Mode
+                </span>
+                <span class="info-value">Disabling requires caution - allows cracked clients but reduces security</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-save"></i>
+                    Backup First
+                </span>
+                <span class="info-value">Always create a backup before making significant configuration changes</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+
+<style>
+/* Card Gradient Primary */
+.card-gradient-primary {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.1) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.card-gradient-primary .card-header {
+    background: rgba(59, 130, 246, 0.1);
+    border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* Command Preview */
+.command-preview {
+    background: var(--bg-primary);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-primary);
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+.command-preview code {
+    color: var(--accent-primary);
+    font-size: 14px;
+    word-break: break-all;
+    display: block;
+    line-height: 1.6;
+}
+
+/* Help Text */
+.help-text {
+    display: block;
+    margin-top: 6px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.help-text i {
+    margin-right: 4px;
+}
+
+/* Startup Parameters Grid */
+.startup-params-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    margin-top: 20px;
+}
+
+.param-item {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    border: 1px solid var(--border-primary);
+    transition: all var(--transition-fast);
+}
+
+.param-item:hover {
+    background: var(--bg-elevated);
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.param-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    background: var(--accent-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.param-icon i {
+    font-size: 20px;
+    color: var(--accent-primary);
+}
+
+.param-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.param-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.param-value {
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 600;
+    word-break: break-word;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+.param-help {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+/* Properties Grid */
+.properties-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+}
+
+.properties-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Info Item */
+.info-item {
+    padding: 16px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent-primary);
+    transition: all var(--transition-fast);
+}
+
+.info-item:hover {
+    background: var(--bg-elevated);
+    transform: translateY(-2px);
+}
+
+.info-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.info-label i {
+    color: var(--accent-primary);
+    font-size: 14px;
+}
+
+.info-value {
+    display: block;
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 500;
+    word-break: break-word;
+}
+
+/* Toggles Section */
+.toggles-section {
+    background: var(--bg-tertiary);
+    padding: 24px;
+    border-radius: 12px;
+    margin: 24px 0;
+    border: 1px solid var(--border-primary);
+}
+
+.toggles-section h4 {
+    margin: 0 0 20px 0;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toggles-section h4 i {
+    color: var(--accent-primary);
+}
+
+.toggles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.toggle-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    background: var(--bg-card);
+    border: 2px solid var(--border-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.toggle-item:hover {
+    border-color: var(--accent-primary);
+    background: var(--bg-elevated);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.toggle-item input[type="checkbox"] {
+    margin-top: 4px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--accent-primary);
+    flex-shrink: 0;
+}
+
+.toggle-content {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.toggle-content i {
+    color: var(--accent-primary);
+    font-size: 18px;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.toggle-content strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 14px;
+    margin-bottom: 2px;
+    font-weight: 600;
+}
+
+.toggle-content small {
+    display: block;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    gap: 12px;
+    padding-top: 8px;
+    flex-wrap: wrap;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .properties-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .startup-params-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .properties-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .toggles-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+const serverId = '<%= server.id %>';
+let originalFormData = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('propertiesForm');
+    if (form) {
+        originalFormData = new FormData(form);
+    }
+});
+
+async function saveProperties(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const data = {};
+    
+    // Process form data
+    for (let [key, value] of formData.entries()) {
+        const input = e.target.elements[key];
+        if (input && input.type === 'checkbox') {
+            data[key] = input.checked ? 'true' : 'false';
+        } else {
+            data[key] = value;
+        }
+    }
+    
+    // Add unchecked checkboxes as false
+    const checkboxes = e.target.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        if (!formData.has(checkbox.name)) {
+            data[checkbox.name] = 'false';
+        }
+    });
+    
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch(`/servers/${serverId}/startup/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const result = await response.json();
+                if (result.success) {
+                    showToast('success', '✅ Server properties saved successfully! Restart the server for changes to take effect.');
+                    originalFormData = new FormData(e.target);
+                } else {
+                    showToast('error', '❌ Error: ' + (result.error || 'Failed to save server properties'));
+                }
+            } else {
+                showToast('success', '✅ Server properties saved successfully! Restart the server for changes to take effect.');
+                originalFormData = new FormData(e.target);
+                setTimeout(() => window.location.reload(), 1500);
+            }
+        } else {
+            showToast('error', '❌ Failed to save server properties. Please try again.');
+        }
+    } catch (err) {
+        console.error('Save error:', err);
+        showToast('error', '❌ Network error: Unable to save server properties.');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+function resetForm() {
+    if (confirm('Are you sure you want to reset all changes?')) {
+        document.getElementById('propertiesForm').reset();
+        showToast('warning', '⚠️ Form reset to original values');
+    }
+}
+
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? 'linear-gradient(45deg, #10b981, #34ce57)' : 
+                     type === 'error' ? 'linear-gradient(45deg, #ef4444, #dc2626)' : 
+                     'linear-gradient(45deg, #f59e0b, #fbbf24)'};
+        color: white;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        z-index: 10001;
+        max-width: 400px;
+        font-size: 14px;
+        font-weight: 500;
+        animation: slideInRight 0.4s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    `;
+    
+    const icon = type === 'success' ? 'check-circle' : 
+                 type === 'error' ? 'exclamation-circle' : 
+                 'exclamation-triangle';
+    
+    toast.innerHTML = `
+        <i class="fas fa-${icon}" style="font-size: 18px;"></i>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOutRight 0.4s ease';
+        setTimeout(() => toast.remove(), 400);
+    }, 5000);
+}
+
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from { transform: translateX(400px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(400px); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
+
+// Warn before leaving if form has changes
+window.addEventListener('beforeunload', function(e) {
+    const form = document.getElementById('propertiesForm');
+    if (!form || !originalFormData) return;
+    
+    const currentData = new FormData(form);
+    let hasChanges = false;
+    
+    for (let [key, value] of currentData.entries()) {
+        if (originalFormData.get(key) !== value) {
+            hasChanges = true;
+            break;
+        }
+    }
+    
+    if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+</script>

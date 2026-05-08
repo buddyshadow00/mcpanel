@@ -1,0 +1,316 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-terminal"></i>
+            Console
+        </h1>
+        <p class="page-subtitle"><%= server.name %></p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-secondary" onclick="clearConsole()">
+            <i class="fas fa-eraser"></i>
+            Clear
+        </button>
+        <button class="btn btn-secondary" onclick="toggleAutoScroll()">
+            <i class="fas fa-arrows-alt-v"></i>
+            <span id="autoScrollText">Auto-scroll: ON</span>
+        </button>
+    </div>
+</div>
+
+<!-- Console Output -->
+<div class="card">
+    <div class="card-body" style="padding: 0;">
+        <div id="console" style="background: #000; color: #fff; font-family: 'Courier New', monospace; font-size: 13px; padding: 20px; height: 500px; overflow-y: auto; border-radius: 16px;">
+            <% if (logContent) { %>
+                <pre style="margin: 0; white-space: pre-wrap;"><%= logContent %></pre>
+            <% } else { %>
+                <p style="color: #888;">No console output available. Start the server to see logs.</p>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<!-- Command Input -->
+<% if (server.status === 'running') { %>
+<div class="card">
+    <div class="card-body">
+        <% 
+        // Check if we can send commands (process reference exists)
+        const canSendCommands = typeof global !== 'undefined' && global.serverProcesses && global.serverProcesses[server.id];
+        %>
+        
+        <% if (!canSendCommands) { %>
+        <div class="alert alert-warning" style="margin-bottom: 16px;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Console commands are disabled. This server was started before the panel was restarted. Please restart the server from the dashboard to enable console commands.</span>
+        </div>
+        <% } %>
+        
+        <form onsubmit="sendCommand(event)" style="display: flex; gap: 12px;">
+            <input type="text" id="commandInput" class="form-control" placeholder="<%= canSendCommands ? 'Enter server command...' : 'Restart server to enable commands' %>" style="flex: 1;" autocomplete="off" <%= !canSendCommands ? 'disabled' : '' %>>
+            <button type="submit" class="btn btn-primary" <%= !canSendCommands ? 'disabled' : '' %>>
+                <i class="fas fa-paper-plane"></i>
+                Send
+            </button>
+        </form>
+        <div style="margin-top: 12px; color: var(--text-muted); font-size: 12px;">
+            <strong>Quick Commands:</strong>
+            <button class="btn btn-sm btn-secondary" onclick="quickCommand('list')" style="margin-left: 8px;" <%= !canSendCommands ? 'disabled' : '' %>>list</button>
+            <button class="btn btn-sm btn-secondary" onclick="quickCommand('help')" <%= !canSendCommands ? 'disabled' : '' %>>help</button>
+            <button class="btn btn-sm btn-secondary" onclick="quickCommand('save-all')" <%= !canSendCommands ? 'disabled' : '' %>>save-all</button>
+            <button class="btn btn-sm btn-secondary" onclick="quickCommand('whitelist list')" <%= !canSendCommands ? 'disabled' : '' %>>whitelist</button>
+            <button class="btn btn-sm btn-secondary" onclick="quickCommand('tps')" <%= !canSendCommands ? 'disabled' : '' %>>tps</button>
+        </div>
+    </div>
+</div>
+<% } else { %>
+<div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>Server must be running to send commands</span>
+</div>
+<% } %>
+
+<script>
+const serverId = <%= server.id %>;
+const consoleDiv = document.getElementById('console');
+let autoScroll = true;
+let socket = null;
+
+// Auto-scroll to bottom
+function scrollToBottom() {
+    if (autoScroll) {
+        consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    }
+}
+scrollToBottom();
+
+function toggleAutoScroll() {
+    autoScroll = !autoScroll;
+    document.getElementById('autoScrollText').textContent = `Auto-scroll: ${autoScroll ? 'ON' : 'OFF'}`;
+}
+
+function clearConsole() {
+    if (confirm('Clear console output?')) {
+        consoleDiv.innerHTML = '<p style="color: #888;">Console cleared</p>';
+    }
+}
+
+function sendCommand(e) {
+    e.preventDefault();
+    const input = document.getElementById('commandInput');
+    const command = input.value.trim();
+    
+    if (!command) return;
+    
+    // Add command to history
+    if (command && !commandHistory.includes(command)) {
+        commandHistory.push(command);
+        if (commandHistory.length > 50) {
+            commandHistory.shift();
+        }
+    }
+    historyIndex = -1;
+    
+    fetch(`/servers/${serverId}/command`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            input.value = '';
+            // Add command to console
+            const pre = document.createElement('pre');
+            pre.style.margin = '0';
+            pre.style.color = '#ffff00';
+            pre.style.fontWeight = 'bold';
+            pre.textContent = '> ' + command;
+            consoleDiv.appendChild(pre);
+            scrollToBottom();
+        } else {
+            // Check if RCON was auto-fixed
+            if (data.autoFixed && data.action === 'restart') {
+                // Show success message with restart button
+                const successDiv = document.createElement('div');
+                successDiv.style.cssText = 'margin: 10px 0; padding: 16px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; color: #10b981;';
+                successDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <i class="fas fa-check-circle" style="font-size: 20px;"></i>
+                        <strong>✅ RCON Automatically Enabled!</strong>
+                    </div>
+                    <p style="margin: 0 0 12px 0; color: var(--text-secondary);">${data.error}</p>
+                    <button onclick="location.reload()" class="btn btn-success" style="padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-sync"></i> Restart Server Now
+                    </button>
+                `;
+                consoleDiv.appendChild(successDiv);
+                scrollToBottom();
+            } else {
+                // Show error message
+                let errorMsg = data.error || 'Failed to send command';
+                if (data.hint) {
+                    errorMsg += '<br><br><small>' + data.hint + '</small>';
+                }
+                
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = 'margin: 10px 0; padding: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444;';
+                errorDiv.innerHTML = '<strong>⚠️ Error:</strong> ' + errorMsg;
+                consoleDiv.appendChild(errorDiv);
+                scrollToBottom();
+            }
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = 'margin: 10px 0; padding: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444;';
+        errorDiv.innerHTML = '<strong>⚠️ Error:</strong> An error occurred while sending the command';
+        consoleDiv.appendChild(errorDiv);
+        scrollToBottom();
+    });
+}
+
+function quickCommand(cmd) {
+    const input = document.getElementById('commandInput');
+    if (input) {
+        input.value = cmd;
+        input.focus();
+    }
+}
+
+// Socket.IO for live console updates
+function initializeSocket() {
+    if (socket) {
+        socket.disconnect();
+    }
+    
+    socket = io();
+    
+    // Join server room
+    socket.emit('join-server', serverId);
+    console.log('Joined server room:', serverId);
+    
+    // Listen for console output (backend emits 'console' event)
+    socket.on('console', (data) => {
+        // Handle both string and object formats
+        let output = '';
+        if (typeof data === 'string') {
+            output = data;
+        } else if (data && data.line) {
+            output = data.line;
+        } else if (data && data.serverId === serverId) {
+            output = data.output || data.message || '';
+        }
+        
+        if (output) {
+            const pre = document.createElement('pre');
+            pre.style.margin = '0';
+            pre.style.whiteSpace = 'pre-wrap';
+            pre.style.wordWrap = 'break-word';
+            
+            // Color coding for different log levels
+            if (output.includes('[ERROR]') || output.includes('ERROR')) {
+                pre.style.color = '#ff5555';
+            } else if (output.includes('[WARN]') || output.includes('WARN')) {
+                pre.style.color = '#ffaa00';
+            } else if (output.includes('[INFO]') || output.includes('INFO')) {
+                pre.style.color = '#ffffff';
+            } else if (output.includes('[DEBUG]') || output.includes('DEBUG')) {
+                pre.style.color = '#5555ff';
+            } else if (output.includes('[PANEL')) {
+                pre.style.color = '#00ffff';
+                pre.style.fontWeight = 'bold';
+            } else {
+                pre.style.color = '#ffffff';
+            }
+            
+            pre.textContent = output;
+            consoleDiv.appendChild(pre);
+            scrollToBottom();
+            
+            // Keep only last 1000 lines for performance
+            while (consoleDiv.children.length > 1000) {
+                consoleDiv.removeChild(consoleDiv.firstChild);
+            }
+        }
+    });
+    
+    // Handle connection status
+    socket.on('connect', () => {
+        console.log('Socket connected');
+        const statusMsg = document.createElement('pre');
+        statusMsg.style.margin = '0';
+        statusMsg.style.color = '#00ffff';
+        statusMsg.style.fontWeight = 'bold';
+        statusMsg.textContent = '[PANEL] Connected to live console\n';
+        consoleDiv.appendChild(statusMsg);
+        scrollToBottom();
+    });
+    
+    socket.on('disconnect', () => {
+        console.log('Socket disconnected');
+        const statusMsg = document.createElement('pre');
+        statusMsg.style.margin = '0';
+        statusMsg.style.color = '#ff5555';
+        statusMsg.style.fontWeight = 'bold';
+        statusMsg.textContent = '[PANEL] Disconnected from live console\n';
+        consoleDiv.appendChild(statusMsg);
+        scrollToBottom();
+    });
+    
+    socket.on('error', (error) => {
+        console.error('Socket error:', error);
+    });
+}
+
+// Initialize socket connection
+initializeSocket();
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    if (socket) {
+        socket.emit('leave-server', serverId);
+        socket.disconnect();
+    }
+});
+
+// Command history
+const commandHistory = [];
+let historyIndex = -1;
+
+const commandInput = document.getElementById('commandInput');
+if (commandInput) {
+    commandInput.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (historyIndex < commandHistory.length - 1) {
+                historyIndex++;
+                e.target.value = commandHistory[commandHistory.length - 1 - historyIndex];
+            }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (historyIndex > 0) {
+                historyIndex--;
+                e.target.value = commandHistory[commandHistory.length - 1 - historyIndex];
+            } else {
+                historyIndex = -1;
+                e.target.value = '';
+            }
+        }
+    });
+}
+
+// Auto-reconnect if connection is lost
+setInterval(() => {
+    if (socket && !socket.connected) {
+        console.log('Reconnecting socket...');
+        initializeSocket();
+    }
+}, 5000);
+</script>
+
+<%- include('../partials/footer') %>

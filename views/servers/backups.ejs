@@ -1,0 +1,411 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-database"></i>
+            Backups
+        </h1>
+        <p class="page-subtitle"><%= server.name %></p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-primary" onclick="showBackupModal()">
+            <i class="fas fa-plus"></i>
+            Create Backup
+        </button>
+    </div>
+</div>
+
+<!-- Progress Bar (hidden by default) -->
+<div id="backupProgress" style="display: none; margin-bottom: 20px;">
+    <div class="card">
+        <div class="card-body">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: var(--primary);"></i>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; margin-bottom: 8px;">Creating Backup...</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;" id="progressText">
+                        Preparing...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Backup List -->
+<div class="card">
+    <div class="card-header">
+        <h3>Available Backups (<%= backups ? backups.length : 0 %>)</h3>
+    </div>
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Backup Name</th>
+                    <th>Size</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (backups && backups.length > 0) { %>
+                    <% backups.forEach(backup => { %>
+                        <tr>
+                            <td>
+                                <strong><%= backup.name || backup.file %></strong>
+                                <% if (backup.description) { %>
+                                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                                        <%= backup.description %>
+                                    </div>
+                                <% } %>
+                            </td>
+                            <td><%= backup.size || 'N/A' %></td>
+                            <td><%= new Date(backup.created_at).toLocaleString() %></td>
+                            <td>
+                                <button class="btn-icon btn-info" onclick="validateBackup(<%= backup.id %>, '<%= backup.name || backup.file %>')" title="Validate">
+                                    <i class="fas fa-check-circle"></i>
+                                </button>
+                                <button class="btn-icon btn-success" onclick="restoreBackup(<%= backup.id %>, '<%= backup.name || backup.file %>')" title="Restore">
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                                <button class="btn-icon btn-primary" onclick="downloadBackup('<%= backup.file %>')" title="Download">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button class="btn-icon btn-danger" onclick="deleteBackup(<%= backup.id %>, '<%= backup.name || backup.file %>')" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    <% }) %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <i class="fas fa-database" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                            No backups available
+                            <div style="margin-top: 16px;">
+                                <button class="btn btn-primary" onclick="showBackupModal()">
+                                    <i class="fas fa-plus"></i>
+                                    Create First Backup
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Backup Info -->
+<div class="card">
+    <div class="card-header">
+        <h3>Backup Information</h3>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            <span>Backups include all server files, worlds, plugins, and configurations. Server will be automatically stopped during backup.</span>
+        </div>
+        <ul style="color: var(--text-secondary); line-height: 1.8;">
+            <li>Create regular backups to prevent data loss</li>
+            <li>Server will automatically restart after backup completes</li>
+            <li>Backups are stored in the server's backup directory</li>
+            <li>Download backups to keep them safe offline</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Create Backup Modal -->
+<div class="modal" id="backupModal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2>Create Backup</h2>
+            <button class="modal-close" onclick="closeBackupModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="backupForm" onsubmit="createBackup(event)">
+                <div class="form-group">
+                    <label>Backup Name</label>
+                    <input type="text" name="name" class="form-control" placeholder="e.g., Before Update" required>
+                    <small style="color: var(--text-muted);">Give your backup a descriptive name</small>
+                </div>
+                <div class="form-group">
+                    <label>Description (Optional)</label>
+                    <textarea name="description" class="form-control" rows="3" placeholder="e.g., Backup before installing new plugins"></textarea>
+                </div>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Server will be stopped during backup and automatically restarted after completion.</span>
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeBackupModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-database"></i>
+                        Create Backup
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: auto;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 24px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--success));
+    transition: width 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 8px;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.btn-icon.btn-info {
+    background: linear-gradient(135deg, #17a2b8, #138496);
+    color: white;
+}
+
+.btn-icon.btn-info:hover {
+    background: linear-gradient(135deg, #138496, #117a8b);
+    transform: translateY(-2px);
+}
+</style>
+
+<script>
+const serverId = '<%= server.id %>';
+
+function showBackupModal() {
+    document.getElementById('backupModal').style.display = 'flex';
+}
+
+function closeBackupModal() {
+    document.getElementById('backupModal').style.display = 'none';
+    document.getElementById('backupForm').reset();
+}
+
+function createBackup(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const name = formData.get('name');
+    const description = formData.get('description');
+    
+    closeBackupModal();
+    
+    // Show progress bar
+    const progressDiv = document.getElementById('backupProgress');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    progressDiv.style.display = 'block';
+    
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        if (progress < 90) {
+            progress += Math.random() * 10;
+            if (progress > 90) progress = 90;
+            progressFill.style.width = progress + '%';
+            
+            if (progress < 30) {
+                progressText.textContent = 'Stopping server...';
+            } else if (progress < 60) {
+                progressText.textContent = 'Compressing files...';
+            } else {
+                progressText.textContent = 'Finalizing backup...';
+            }
+        }
+    }, 500);
+    
+    fetch(`/servers/${serverId}/backups/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description })
+    })
+    .then(res => res.json())
+    .then(data => {
+        clearInterval(progressInterval);
+        progressFill.style.width = '100%';
+        progressText.textContent = 'Complete!';
+        
+        setTimeout(() => {
+            if (data.success) {
+                location.reload();
+            } else {
+                progressDiv.style.display = 'none';
+                alert('Error: ' + (data.error || 'Failed to create backup'));
+            }
+        }, 1000);
+    })
+    .catch(err => {
+        clearInterval(progressInterval);
+        progressDiv.style.display = 'none';
+        console.error('Error:', err);
+        alert('An error occurred');
+    });
+}
+
+function restoreBackup(backupId, backupName) {
+    if (!confirm(`Restore backup "${backupName}"? This will replace all current server files!`)) return;
+    
+    if (!confirm('This action cannot be undone. Make sure the server is stopped. Continue?')) return;
+    
+    // Show loading indicator
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'restoreLoading';
+    loadingDiv.innerHTML = `
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="card-body">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: var(--primary);"></i>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; margin-bottom: 8px;">Restoring Backup...</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">
+                            This may take a few minutes. Please wait...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.querySelector('.page-header').after(loadingDiv);
+    
+    fetch(`/servers/${serverId}/backups/restore`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backupId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('restoreLoading')?.remove();
+        
+        if (data.success) {
+            alert('Backup restored successfully! Start the server to use the restored files.');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to restore backup'));
+        }
+    })
+    .catch(err => {
+        document.getElementById('restoreLoading')?.remove();
+        console.error('Error:', err);
+        alert('An error occurred during restore');
+    });
+}
+
+function validateBackup(backupId, backupName) {
+    // Show loading indicator
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'validateLoading';
+    loadingDiv.innerHTML = `
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="card-body">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: var(--info);"></i>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; margin-bottom: 8px;">Validating Backup...</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">
+                            Checking backup integrity...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.querySelector('.page-header').after(loadingDiv);
+    
+    fetch(`/servers/${serverId}/backups/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backupId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('validateLoading')?.remove();
+        
+        if (data.valid) {
+            alert(`✓ Backup is valid!\n\n${data.message}\nSize: ${data.size}\n\nThis backup can be safely restored.`);
+        } else {
+            alert(`✗ Backup validation failed!\n\nError: ${data.error}\n\nThis backup cannot be restored. Please create a new backup.`);
+        }
+    })
+    .catch(err => {
+        document.getElementById('validateLoading')?.remove();
+        console.error('Error:', err);
+        alert('An error occurred during validation');
+    });
+}
+
+function downloadBackup(filename) {
+    window.location.href = `/servers/${serverId}/backups/download/${filename}`;
+}
+
+function deleteBackup(backupId, backupName) {
+    if (!confirm(`Delete backup "${backupName}"? This cannot be undone!`)) return;
+    
+    fetch(`/servers/${serverId}/backups/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backupId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('Backup deleted successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to delete backup'));
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('An error occurred');
+    });
+}
+
+// Close modal when clicking outside
+document.getElementById('backupModal').addEventListener('click', function(e) {
+    if (e.target === this) closeBackupModal();
+});
+</script>
+
+<%- include('../partials/footer') %>

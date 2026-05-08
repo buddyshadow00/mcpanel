@@ -1,0 +1,1232 @@
+<%- include('../partials/header') %>
+
+<style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .page-container {
+            padding: 32px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding: 24px;
+            background: linear-gradient(135deg, #111318 0%, #1a1d29 100%);
+            border-radius: 16px;
+            border: 1px solid #2a2f3f;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-left {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #f8fafc;
+            letter-spacing: -0.5px;
+        }
+
+        .title i {
+            color: #3b82f6;
+            font-size: 26px;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-top: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            background: #f59e0b;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #1e2230;
+            color: #f8fafc;
+            border: 1px solid #2a2f3f;
+        }
+
+        .btn-secondary:hover {
+            background: #2d3142;
+            border-color: #3b4252;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .alert {
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-info {
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            color: #67e8f9;
+        }
+
+        .alert i {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .alert a {
+            color: #06b6d4;
+            font-weight: 700;
+            text-decoration: underline;
+            transition: color 0.2s;
+        }
+
+        .alert a:hover {
+            color: #67e8f9;
+        }
+
+        .editor-container {
+            background: #111318;
+            border: 1px solid #2a2f3f;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .editor-header {
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #1a1d29 0%, #1e2230 100%);
+            border-bottom: 1px solid #2a2f3f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .editor-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .editor-title {
+            font-weight: 700;
+            font-size: 16px;
+            color: #f8fafc;
+        }
+
+        .editor-tools {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tool-btn {
+            padding: 8px 14px;
+            background: #252938;
+            border: 1px solid #2a2f3f;
+            border-radius: 8px;
+            color: #cbd5e1;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tool-btn:hover {
+            background: #2d3142;
+            color: #f8fafc;
+            border-color: #3b82f6;
+        }
+
+        .tool-btn:active {
+            transform: scale(0.95);
+        }
+
+        .editor-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            color: #94a3b8;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .stat-item i {
+            color: #3b82f6;
+            font-size: 12px;
+        }
+
+        .stat-item.line-count {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .stat-item.line-count i {
+            color: #10b981;
+        }
+
+        .editor-wrapper {
+            background: #0d1117;
+            min-height: 600px;
+            position: relative;
+            overflow: auto;
+        }
+
+        .line-numbers {
+            display: none;
+        }
+
+        .editor-area {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            position: relative;
+        }
+
+        #editor {
+            width: 100%;
+            min-height: 600px;
+            background: #0d1117;
+            color: #c9d1d9;
+            border: none;
+            outline: none;
+            resize: none;
+            padding: 20px 24px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 22px;
+            tab-size: 4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            box-sizing: border-box;
+            font-weight: 400;
+        }
+
+        #editor::selection {
+            background: rgba(59, 130, 246, 0.3);
+        }
+
+        .editor-area::-webkit-scrollbar,
+        #editor::-webkit-scrollbar,
+        .editor-wrapper::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        .editor-area::-webkit-scrollbar-track,
+        #editor::-webkit-scrollbar-track,
+        .editor-wrapper::-webkit-scrollbar-track {
+            background: #0d1117;
+        }
+
+        .editor-area::-webkit-scrollbar-thumb,
+        #editor::-webkit-scrollbar-thumb,
+        .editor-wrapper::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 6px;
+            border: 2px solid #0d1117;
+        }
+
+        .editor-area::-webkit-scrollbar-thumb:hover,
+        #editor::-webkit-scrollbar-thumb:hover,
+        .editor-wrapper::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
+
+        .toast {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            padding: 14px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 10000;
+            animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            min-width: 300px;
+            font-weight: 600;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.fadeOut {
+            animation: fadeOut 0.3s forwards;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(400px);
+            }
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .toast.warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .toast i {
+            font-size: 20px;
+        }
+
+        .find-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeIn 0.2s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .find-modal.show {
+            display: flex;
+        }
+
+        .find-content {
+            background: #1a1d29;
+            border: 1px solid #2a2f3f;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 550px;
+            box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
+            animation: scaleIn 0.2s;
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .find-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #2a2f3f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .find-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+            background: #252938;
+            color: #f8fafc;
+        }
+
+        .find-body {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            background: #0d1117;
+            border: 1px solid #2a2f3f;
+            border-radius: 10px;
+            color: #f8fafc;
+            font-size: 14px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-control::placeholder {
+            color: #6e7681;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .find-count {
+            margin-left: auto;
+            color: #94a3b8;
+            font-size: 13px;
+            line-height: 32px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        @media (max-width: 768px) {
+            .page-container {
+                padding: 20px 16px;
+            }
+
+            .header {
+                padding: 16px;
+            }
+
+            .title {
+                font-size: 22px;
+            }
+
+            .actions {
+                width: 100%;
+            }
+
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .editor-header {
+                padding: 12px 16px;
+            }
+
+            .editor-tools {
+                width: 100%;
+            }
+
+            .tool-btn {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .line-numbers {
+                display: none;
+            }
+
+            #editor {
+                font-size: 13px;
+                padding: 20px 16px;
+            }
+
+            .toast {
+                right: 12px;
+                left: 12px;
+                min-width: auto;
+            }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 12, 16, 0.95);
+            backdrop-filter: blur(4px);
+            z-index: 10001;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #2a2f3f;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+
+<div class="page-container">
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div class="title">
+                    <i class="fas fa-file-code"></i>
+                    File Editor
+                </div>
+                <div class="subtitle">
+                    <% if (typeof filePath !== 'undefined') { %>
+                        <i class="fas fa-folder-open"></i>
+                        <%= filePath %>
+                    <% } else { %>
+                        <i class="fas fa-exclamation-triangle"></i>
+                        No file path
+                    <% } %>
+                    <span id="modifiedBadge" class="badge" style="display: none;">
+                        <i class="fas fa-circle"></i>
+                        Modified
+                    </span>
+                </div>
+            </div>
+            <div class="actions">
+                <% if (typeof server !== 'undefined' && typeof path !== 'undefined' && typeof filePath !== 'undefined' && path.basename(filePath) === 'server.properties') { %>
+                    <a href="/servers/<%= server.id %>/properties" class="btn btn-info">
+                        <i class="fas fa-sliders-h"></i>
+                        Visual Editor
+                    </a>
+                <% } %>
+                <% if (typeof server !== 'undefined') { %>
+                    <a href="/servers/<%= server.id %>/files" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back
+                    </a>
+                <% } %>
+                <button class="btn btn-primary" onclick="saveFile()" id="saveBtn">
+                    <i class="fas fa-save"></i>
+                    Save
+                </button>
+            </div>
+        </div>
+
+        <% if (typeof server !== 'undefined' && typeof path !== 'undefined' && typeof filePath !== 'undefined' && path.basename(filePath) === 'server.properties') { %>
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            <span>
+                You're editing the raw server.properties file. For easier configuration, use the 
+                <a href="/servers/<%= server.id %>/properties">Visual Properties Editor</a>.
+            </span>
+        </div>
+        <% } %>
+
+        <div class="editor-container">
+            <div class="editor-header">
+                <div class="editor-header-left">
+                    <span class="editor-title">Code Editor</span>
+                    <div class="editor-tools">
+                        <button class="tool-btn" onclick="showFindModal()" title="Find & Replace (Ctrl+F)">
+                            <i class="fas fa-search"></i>
+                            Find
+                        </button>
+                        <button class="tool-btn" onclick="toggleWrap()" title="Toggle Word Wrap (Alt+Z)">
+                            <i class="fas fa-align-left"></i>
+                            Wrap
+                        </button>
+                        <button class="tool-btn" onclick="formatDoc()" title="Format Document">
+                            <i class="fas fa-indent"></i>
+                            Format
+                        </button>
+                    </div>
+                </div>
+                <div class="editor-stats">
+                    <div class="stat-item line-count">
+                        <i class="fas fa-hashtag"></i>
+                        <span id="lineCount">
+                            <% if (typeof content !== 'undefined') { %>
+                                <%= content.split('\n').length %>
+                            <% } else { %>
+                                0
+                            <% } %>
+                        </span>
+                        <span style="color: #6e7681;">lines</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-location-dot"></i>
+                        <span id="cursorPos">Ln 1, Col 1</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-file-lines"></i>
+                        <span id="fileStats">
+                            <% if (typeof content !== 'undefined') { %>
+                                <%= content.length %> chars
+                            <% } else { %>
+                                0 chars
+                            <% } %>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="editor-wrapper">
+                <div class="editor-area" id="editorWrapper">
+                    <textarea id="editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"><% if (typeof content !== 'undefined') { %><%= content %><% } %></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="find-modal" id="findModal">
+        <div class="find-content">
+            <div class="find-header">
+                <h3>
+                    <i class="fas fa-search"></i>
+                    Find & Replace
+                </h3>
+                <button class="close-btn" onclick="hideFindModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="find-body">
+                <div class="form-group">
+                    <label class="form-label">Find</label>
+                    <input type="text" id="findInput" class="form-control" placeholder="Search in file..." autocomplete="off">
+                    <div class="button-group">
+                        <button class="btn btn-secondary btn-sm" onclick="findPrev()">
+                            <i class="fas fa-chevron-up"></i>
+                            Previous
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="findNext()">
+                            <i class="fas fa-chevron-down"></i>
+                            Next
+                        </button>
+                        <span class="find-count" id="findCount">0 found</span>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Replace</label>
+                    <input type="text" id="replaceInput" class="form-control" placeholder="Replace with..." autocomplete="off">
+                    <div class="button-group">
+                        <button class="btn btn-primary btn-sm" onclick="replaceOne()">
+                            <i class="fas fa-exchange-alt"></i>
+                            Replace
+                        </button>
+                        <button class="btn btn-success btn-sm" onclick="replaceAll()">
+                            <i class="fas fa-check-double"></i>
+                            Replace All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+
+    <script>
+        const serverId = '<% if (typeof server !== "undefined") { %><%= server.id %><% } %>';
+        const filePathRaw = '<% if (typeof filePath !== "undefined") { %><%= filePath %><% } %>';
+        const filePath = filePathRaw.replace(/\\/g, '\\\\');
+        
+        let editor, lineNumbers, editorWrapper;
+        let originalContent = '';
+        let isModified = false;
+        let currentSearchIndex = -1;
+        let searchMatches = [];
+
+        console.log('File Editor Initialized');
+        console.log('Server ID:', serverId);
+        console.log('File Path:', filePath);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded');
+            
+            editor = document.getElementById('editor');
+            editorWrapper = document.getElementById('editorWrapper');
+            
+            if (!editor) {
+                console.error('Editor element not found!');
+                showToast('ERROR: Editor element not found!', 'error');
+                return;
+            }
+            
+            console.log('Editor found, content length:', editor.value.length);
+            originalContent = editor.value;
+            
+            updateCursor();
+            updateStats();
+            
+            // Editor events
+            editor.addEventListener('input', onChange);
+            editor.addEventListener('keydown', onKeyDown);
+            editor.addEventListener('click', updateCursor);
+            editor.addEventListener('keyup', updateCursor);
+            editor.addEventListener('select', updateCursor);
+            
+            // Tab handling with indent/unindent
+            editor.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = this.selectionStart;
+                    const end = this.selectionEnd;
+                    
+                    if (e.shiftKey) {
+                        // Shift+Tab: Unindent
+                        const lineStart = this.value.lastIndexOf('\n', start - 1) + 1;
+                        const lineText = this.value.substring(lineStart, end);
+                        if (lineText.startsWith('    ')) {
+                            this.value = this.value.substring(0, lineStart) + lineText.substring(4) + this.value.substring(end);
+                            this.selectionStart = Math.max(lineStart, start - 4);
+                            this.selectionEnd = Math.max(lineStart, end - 4);
+                        } else if (lineText.startsWith('\t')) {
+                            this.value = this.value.substring(0, lineStart) + lineText.substring(1) + this.value.substring(end);
+                            this.selectionStart = Math.max(lineStart, start - 1);
+                            this.selectionEnd = Math.max(lineStart, end - 1);
+                        }
+                    } else {
+                        // Tab: Indent
+                        this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+                        this.selectionStart = this.selectionEnd = start + 4;
+                    }
+                    onChange();
+                }
+            });
+            
+            // Find modal events
+            const findModal = document.getElementById('findModal');
+            findModal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideFindModal();
+                }
+            });
+            
+            const findInput = document.getElementById('findInput');
+            findInput.addEventListener('input', function() {
+                const term = this.value;
+                if (term) {
+                    updateFindCount(term);
+                } else {
+                    document.getElementById('findCount').textContent = '0 found';
+                }
+            });
+            
+            findInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        findPrev();
+                    } else {
+                        findNext();
+                    }
+                }
+                if (e.key === 'Escape') {
+                    hideFindModal();
+                }
+            });
+            
+            console.log('Editor initialized successfully');
+        });
+
+        function onChange() {
+            updateStats();
+            updateCursor();
+            checkModified();
+        }
+
+        function updateStats() {
+            if (!editor) return;
+            const lines = editor.value.split('\n').length;
+            const chars = editor.value.length;
+            
+            const lineCountEl = document.getElementById('lineCount');
+            if (lineCountEl) {
+                lineCountEl.textContent = lines;
+            }
+            
+            const statsEl = document.getElementById('fileStats');
+            if (statsEl) {
+                statsEl.textContent = chars + ' chars';
+            }
+        }
+
+        function updateCursor() {
+            if (!editor) return;
+            const pos = editor.selectionStart;
+            const text = editor.value.substring(0, pos);
+            const lines = text.split('\n');
+            const line = lines.length;
+            const col = lines[lines.length - 1].length + 1;
+            const cursorEl = document.getElementById('cursorPos');
+            if (cursorEl) {
+                cursorEl.textContent = 'Ln ' + line + ', Col ' + col;
+            }
+        }
+
+        function checkModified() {
+            if (!editor) return;
+            isModified = editor.value !== originalContent;
+            const badge = document.getElementById('modifiedBadge');
+            if (badge) {
+                badge.style.display = isModified ? 'inline-flex' : 'none';
+            }
+        }
+
+        function onKeyDown(e) {
+            // Ctrl+S: Save
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                saveFile();
+            }
+            // Ctrl+F: Find
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                showFindModal();
+            }
+            // Alt+Z: Toggle word wrap
+            if (e.altKey && e.key === 'z') {
+                e.preventDefault();
+                toggleWrap();
+            }
+            // Escape: Close find modal
+            if (e.key === 'Escape') {
+                hideFindModal();
+            }
+        }
+
+        async function saveFile() {
+            if (!serverId || !filePath) {
+                showToast('Error: Missing server ID or file path', 'error');
+                return;
+            }
+            
+            const btn = document.getElementById('saveBtn');
+            if (!btn) return;
+            
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch('/servers/' + serverId + '/files/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        path: filePathRaw, 
+                        content: editor.value 
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    originalContent = editor.value;
+                    isModified = false;
+                    const badge = document.getElementById('modifiedBadge');
+                    if (badge) badge.style.display = 'none';
+                    btn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+                    showToast('File saved successfully!', 'success');
+                    setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
+                } else {
+                    throw new Error(data.error || 'Failed to save file');
+                }
+            } catch (err) {
+                console.error('Save error:', err);
+                showToast('Error: ' + err.message, 'error');
+                btn.innerHTML = '<i class="fas fa-times"></i> Error';
+                setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function formatDoc() {
+            if (!editor) return;
+            // Remove trailing whitespace from each line
+            editor.value = editor.value.split('\n').map(line => line.trimEnd()).join('\n');
+            onChange();
+            showToast('Document formatted successfully', 'success');
+        }
+
+        function toggleWrap() {
+            if (!editor) return;
+            if (editor.style.whiteSpace === 'pre-wrap') {
+                editor.style.whiteSpace = 'pre';
+                showToast('Word wrap disabled', 'success');
+            } else {
+                editor.style.whiteSpace = 'pre-wrap';
+                showToast('Word wrap enabled', 'success');
+            }
+        }
+
+        function showFindModal() {
+            const modal = document.getElementById('findModal');
+            const input = document.getElementById('findInput');
+            if (modal) {
+                modal.classList.add('show');
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            }
+        }
+
+        function hideFindModal() {
+            const modal = document.getElementById('findModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        function findNext() {
+            if (!editor) return;
+            const term = document.getElementById('findInput').value;
+            if (!term) {
+                showToast('Please enter a search term', 'warning');
+                return;
+            }
+            
+            const pos = editor.selectionEnd;
+            let next = editor.value.indexOf(term, pos);
+            
+            // Wrap around to beginning if not found
+            if (next === -1) {
+                next = editor.value.indexOf(term);
+            }
+            
+            if (next !== -1) {
+                editor.focus();
+                editor.setSelectionRange(next, next + term.length);
+                
+                // Scroll to selection
+                const lineHeight = 22;
+                const linesBeforeSelection = editor.value.substring(0, next).split('\n').length;
+                const scrollTarget = Math.max(0, (linesBeforeSelection - 10) * lineHeight);
+                editorWrapper.scrollTop = scrollTarget;
+                
+                updateFindCount(term);
+            } else {
+                showToast('No matches found', 'warning');
+            }
+        }
+
+        function findPrev() {
+            if (!editor) return;
+            const term = document.getElementById('findInput').value;
+            if (!term) {
+                showToast('Please enter a search term', 'warning');
+                return;
+            }
+            
+            const pos = editor.selectionStart;
+            let prev = editor.value.lastIndexOf(term, pos - 1);
+            
+            // Wrap around to end if not found
+            if (prev === -1) {
+                prev = editor.value.lastIndexOf(term);
+            }
+            
+            if (prev !== -1) {
+                editor.focus();
+                editor.setSelectionRange(prev, prev + term.length);
+                
+                // Scroll to selection
+                const lineHeight = 22;
+                const linesBeforeSelection = editor.value.substring(0, prev).split('\n').length;
+                const scrollTarget = Math.max(0, (linesBeforeSelection - 10) * lineHeight);
+                editorWrapper.scrollTop = scrollTarget;
+                
+                updateFindCount(term);
+            } else {
+                showToast('No matches found', 'warning');
+            }
+        }
+
+        function updateFindCount(term) {
+            if (!editor) return;
+            const matches = editor.value.split(term).length - 1;
+            const countEl = document.getElementById('findCount');
+            if (countEl) {
+                countEl.textContent = matches + ' found';
+            }
+        }
+
+        function replaceOne() {
+            if (!editor) return;
+            const find = document.getElementById('findInput').value;
+            const replace = document.getElementById('replaceInput').value;
+            if (!find) {
+                showToast('Please enter a search term', 'warning');
+                return;
+            }
+            
+            const selected = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+            if (selected === find) {
+                const start = editor.selectionStart;
+                editor.value = editor.value.substring(0, start) + replace + editor.value.substring(editor.selectionEnd);
+                editor.setSelectionRange(start, start + replace.length);
+                onChange();
+                showToast('Replaced 1 occurrence', 'success');
+                findNext(); // Move to next occurrence
+            } else {
+                findNext();
+            }
+        }
+
+        function replaceAll() {
+            if (!editor) return;
+            const find = document.getElementById('findInput').value;
+            const replace = document.getElementById('replaceInput').value;
+            if (!find) {
+                showToast('Please enter a search term', 'warning');
+                return;
+            }
+            
+            const count = editor.value.split(find).length - 1;
+            if (count > 0) {
+                editor.value = editor.value.split(find).join(replace);
+                onChange();
+                showToast('Replaced ' + count + ' occurrence' + (count !== 1 ? 's' : ''), 'success');
+            } else {
+                showToast('No occurrences found', 'warning');
+            }
+        }
+
+        function showToast(msg, type) {
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            
+            const icon = type === 'success' ? 'check-circle' : 
+                         type === 'error' ? 'exclamation-circle' : 
+                         'exclamation-triangle';
+            
+            toast.innerHTML = '<i class="fas fa-' + icon + '"></i><span>' + msg + '</span>';
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('fadeOut');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Warn before leaving with unsaved changes
+        window.addEventListener('beforeunload', function(e) {
+            if (isModified) {
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        });
+
+        // Prevent accidental data loss
+        window.addEventListener('pagehide', function() {
+            if (isModified) {
+                localStorage.setItem('unsaved_' + serverId + '_' + filePath, editor.value);
+            }
+        });
+
+        // Check for unsaved content on load
+        window.addEventListener('load', function() {
+            const unsaved = localStorage.getItem('unsaved_' + serverId + '_' + filePath);
+            if (unsaved && unsaved !== originalContent) {
+                if (confirm('Found unsaved changes from a previous session. Would you like to restore them?')) {
+                    editor.value = unsaved;
+                    onChange();
+                }
+                localStorage.removeItem('unsaved_' + serverId + '_' + filePath);
+            }
+        });
+    </script>
+</div>
+
+<%- include('../partials/footer') %>

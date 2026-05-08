@@ -1,0 +1,699 @@
+<script>
+// Profile page JavaScript functionality
+
+// Tab Management
+document.addEventListener('DOMContentLoaded', function() {
+    initializeTabs();
+    initializeColorPickers();
+    initializePasswordStrength();
+    loadActivity();
+    loadSecurityLog();
+});
+
+function initializeTabs() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetTab = this.dataset.tab;
+            
+            // Remove active class from all tabs and contents
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            this.classList.add('active');
+            document.getElementById(targetTab).classList.add('active');
+        });
+    });
+}
+
+// Profile Form Handling
+document.getElementById('profileForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        showLoading('Updating profile...');
+        
+        const response = await fetch('/profile/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Profile updated successfully!', 'success');
+        } else {
+            showToast(result.error || 'Failed to update profile', 'error');
+        }
+    } catch (error) {
+        console.error('Profile update error:', error);
+        showToast('An error occurred while updating profile', 'error');
+    } finally {
+        hideLoading();
+    }
+});
+
+// Password Form Handling
+document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const currentPassword = document.getElementById('current_password').value;
+    const newPassword = document.getElementById('new_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    
+    if (newPassword !== confirmPassword) {
+        showToast('New passwords do not match', 'error');
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        showToast('Password must be at least 6 characters long', 'error');
+        return;
+    }
+    
+    try {
+        showLoading('Changing password...');
+        
+        const response = await fetch('/profile/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                current_password: currentPassword,
+                new_password: newPassword
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Password changed successfully!', 'success');
+            this.reset();
+        } else {
+            showToast(result.error || 'Failed to change password', 'error');
+        }
+    } catch (error) {
+        console.error('Password change error:', error);
+        showToast('An error occurred while changing password', 'error');
+    } finally {
+        hideLoading();
+    }
+});
+
+// Appearance Form Handling
+document.getElementById('appearanceForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // Add email from the general form to prevent NOT NULL constraint error
+    data.email = document.getElementById('email').value;
+    
+    // Add language and timezone from the appearance tab
+    data.language = document.getElementById('language').value;
+    data.timezone = document.getElementById('timezone').value;
+    
+    try {
+        showLoading('Saving theme...');
+        
+        const response = await fetch('/profile/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Theme saved successfully!', 'success');
+            applyTheme(); // Apply the saved theme
+            
+            // Reload page after 1 second to apply theme globally
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showToast(result.error || 'Failed to save theme', 'error');
+        }
+    } catch (error) {
+        console.error('Theme save error:', error);
+        showToast('An error occurred while saving theme', 'error');
+    } finally {
+        hideLoading();
+    }
+});
+
+// Notification Form Handling
+document.getElementById('notificationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // Convert checkboxes to boolean
+    data.email_notifications = document.getElementById('email_notifications').checked;
+    data.push_notifications = document.getElementById('push_notifications').checked;
+    data.security_notifications = document.getElementById('security_notifications').checked;
+    
+    try {
+        showLoading('Saving notification settings...');
+        
+        const response = await fetch('/profile/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Notification settings saved successfully!', 'success');
+        } else {
+            showToast(result.error || 'Failed to save notification settings', 'error');
+        }
+    } catch (error) {
+        console.error('Notification settings error:', error);
+        showToast('An error occurred while saving notification settings', 'error');
+    } finally {
+        hideLoading();
+    }
+});
+
+// Color Picker Functions
+function initializeColorPickers() {
+    updateColorPreviews();
+    
+    document.getElementById('theme_primary_color').addEventListener('change', updateColorPreviews);
+    document.getElementById('theme_accent_color').addEventListener('change', updateColorPreviews);
+    
+    // Add listener for theme mode changes
+    document.getElementById('theme_preference').addEventListener('change', function() {
+        applyTheme();
+    });
+    
+    // Preset color handling
+    document.querySelectorAll('.preset-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const primary = this.dataset.primary;
+            const accent = this.dataset.accent;
+            
+            document.getElementById('theme_primary_color').value = primary;
+            document.getElementById('theme_accent_color').value = accent;
+            updateColorPreviews();
+        });
+    });
+}
+
+function updateColorPreviews() {
+    const primaryColor = document.getElementById('theme_primary_color').value;
+    const accentColor = document.getElementById('theme_accent_color').value;
+    
+    document.getElementById('primaryColorPreview').style.backgroundColor = primaryColor;
+    document.getElementById('accentColorPreview').style.backgroundColor = accentColor;
+}
+
+function applyTheme() {
+    const primaryColor = document.getElementById('theme_primary_color').value;
+    const accentColor = document.getElementById('theme_accent_color').value;
+    const themeMode = document.getElementById('theme_preference').value;
+    
+    // Apply theme mode (light/dark/auto)
+    const html = document.documentElement;
+    if (themeMode === 'light') {
+        html.setAttribute('data-theme', 'light');
+    } else if (themeMode === 'dark') {
+        html.setAttribute('data-theme', 'dark');
+    } else if (themeMode === 'auto') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    }
+    
+    // Apply theme colors to CSS variables
+    document.documentElement.style.setProperty('--accent-primary', primaryColor);
+    document.documentElement.style.setProperty('--accent-secondary', accentColor);
+    document.documentElement.style.setProperty('--btn-primary-bg', primaryColor);
+    document.documentElement.style.setProperty('--btn-primary-hover', accentColor);
+    
+    // Apply additional color variations
+    const primaryRGB = hexToRgb(primaryColor);
+    const accentRGB = hexToRgb(accentColor);
+    
+    if (primaryRGB) {
+        document.documentElement.style.setProperty('--accent-primary-rgb', `${primaryRGB.r}, ${primaryRGB.g}, ${primaryRGB.b}`);
+    }
+    if (accentRGB) {
+        document.documentElement.style.setProperty('--accent-secondary-rgb', `${accentRGB.r}, ${accentRGB.g}, ${accentRGB.b}`);
+    }
+    
+    showToast('Theme preview applied! Save to make it permanent.', 'info');
+}
+
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
+function resetTheme() {
+    document.getElementById('theme_primary_color').value = '<%= user.theme_primary_color || "#2d6a4f" %>';
+    document.getElementById('theme_accent_color').value = '<%= user.theme_accent_color || "#40916c" %>';
+    document.getElementById('theme_preference').value = '<%= user.theme_preference || "dark" %>';
+    updateColorPreviews();
+}
+
+// Password Strength Checker
+function initializePasswordStrength() {
+    const passwordInput = document.getElementById('new_password');
+    const strengthIndicator = document.getElementById('passwordStrength');
+    
+    passwordInput.addEventListener('input', function() {
+        const password = this.value;
+        const strength = calculatePasswordStrength(password);
+        
+        strengthIndicator.className = `password-strength ${strength.level}`;
+        strengthIndicator.innerHTML = `<div class="password-strength-bar"></div>`;
+        strengthIndicator.title = strength.feedback;
+    });
+}
+
+function calculatePasswordStrength(password) {
+    let score = 0;
+    let feedback = '';
+    
+    if (password.length >= 8) score += 1;
+    if (password.match(/[a-z]/)) score += 1;
+    if (password.match(/[A-Z]/)) score += 1;
+    if (password.match(/[0-9]/)) score += 1;
+    if (password.match(/[^a-zA-Z0-9]/)) score += 1;
+    
+    switch (score) {
+        case 0:
+        case 1:
+            return { level: 'weak', feedback: 'Very weak password' };
+        case 2:
+            return { level: 'weak', feedback: 'Weak password' };
+        case 3:
+            return { level: 'fair', feedback: 'Fair password' };
+        case 4:
+            return { level: 'good', feedback: 'Good password' };
+        case 5:
+            return { level: 'strong', feedback: 'Strong password' };
+        default:
+            return { level: 'weak', feedback: 'Weak password' };
+    }
+}
+
+// Profile Picture Functions
+function uploadProfilePicture() {
+    document.getElementById('profilePictureInput').click();
+}
+
+document.getElementById('profilePictureInput').addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        showToast('Please select an image file', 'error');
+        return;
+    }
+    
+    // Validate file size (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+        showToast('Image must be smaller than 2MB', 'error');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('profile_picture', file);
+    
+    try {
+        showLoading('Uploading profile picture...');
+        
+        const response = await fetch('/profile/upload-picture', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Profile picture updated successfully!', 'success');
+            // Update the profile picture display
+            const profilePicture = document.getElementById('profilePicture');
+            profilePicture.innerHTML = `<img src="${result.profile_picture}" alt="Profile Picture">`;
+            
+            // Add delete button if it doesn't exist
+            const overlay = profilePicture.parentElement.querySelector('.profile-overlay');
+            if (!overlay.querySelector('.btn-danger')) {
+                overlay.innerHTML += `
+                    <button class="btn btn-sm btn-danger" onclick="deleteProfilePicture()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+            }
+        } else {
+            showToast(result.error || 'Failed to upload profile picture', 'error');
+        }
+    } catch (error) {
+        console.error('Profile picture upload error:', error);
+        showToast('An error occurred while uploading profile picture', 'error');
+    } finally {
+        hideLoading();
+    }
+});
+
+async function deleteProfilePicture() {
+    if (!confirm('Are you sure you want to delete your profile picture?')) {
+        return;
+    }
+    
+    try {
+        showLoading('Deleting profile picture...');
+        
+        const response = await fetch('/profile/delete-picture', {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Profile picture deleted successfully!', 'success');
+            // Update the profile picture display
+            const profilePicture = document.getElementById('profilePicture');
+            profilePicture.innerHTML = `
+                <div class="profile-placeholder">
+                    <i class="fas fa-user"></i>
+                </div>
+            `;
+            
+            // Remove delete button from overlay
+            const overlay = profilePicture.parentElement.querySelector('.profile-overlay');
+            const deleteBtn = overlay.querySelector('.btn-danger');
+            if (deleteBtn) {
+                deleteBtn.remove();
+            }
+        } else {
+            showToast(result.error || 'Failed to delete profile picture', 'error');
+        }
+    } catch (error) {
+        console.error('Profile picture delete error:', error);
+        showToast('An error occurred while deleting profile picture', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Activity Log Functions
+async function loadActivity() {
+    const activityLog = document.getElementById('activityLog');
+    activityLog.innerHTML = '<div class="loading">Loading activity log...</div>';
+    
+    try {
+        const response = await fetch('/profile/activity');
+        const result = await response.json();
+        
+        if (result.success && result.activities.length > 0) {
+            activityLog.innerHTML = result.activities.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-${getActivityIcon(activity.action)}"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">${activity.action}</div>
+                        <div class="activity-description">${activity.description || 'No description'}</div>
+                    </div>
+                    <div class="activity-time">${formatDate(activity.created_at)}</div>
+                </div>
+            `).join('');
+        } else {
+            activityLog.innerHTML = '<div class="text-center text-muted">No activity found</div>';
+        }
+    } catch (error) {
+        console.error('Load activity error:', error);
+        activityLog.innerHTML = '<div class="text-center text-danger">Failed to load activity log</div>';
+    }
+}
+
+// Security Log Functions
+async function loadSecurityLog() {
+    const securityLog = document.getElementById('securityLog');
+    securityLog.innerHTML = '<div class="loading">Loading security events...</div>';
+    
+    try {
+        // This would need to be implemented in the backend
+        const response = await fetch('/profile/security-log');
+        const result = await response.json();
+        
+        if (result.success && result.events.length > 0) {
+            securityLog.innerHTML = result.events.map(event => `
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-${getSecurityIcon(event.event_type)}"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">${formatSecurityEvent(event.event_type)}</div>
+                        <div class="activity-description">${event.details || 'No details'}</div>
+                    </div>
+                    <div class="activity-time">${formatDate(event.created_at)}</div>
+                </div>
+            `).join('');
+        } else {
+            securityLog.innerHTML = '<div class="text-center text-muted">No security events found</div>';
+        }
+    } catch (error) {
+        console.error('Load security log error:', error);
+        securityLog.innerHTML = '<div class="text-center text-muted">Security log coming soon</div>';
+    }
+}
+
+// Two-Factor Authentication Functions
+async function enableTwoFactor() {
+    showToast('Two-factor authentication setup coming soon!', 'info');
+}
+
+async function disableTwoFactor() {
+    if (!confirm('Are you sure you want to disable two-factor authentication?')) {
+        return;
+    }
+    
+    showToast('Two-factor authentication disable coming soon!', 'info');
+}
+
+// Test Notification Function
+async function testNotification() {
+    try {
+        const response = await fetch('/notifications/test', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                type: 'info',
+                title: 'Test Notification',
+                message: 'This is a test notification from your profile settings.'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Test notification sent successfully!', 'success');
+        } else {
+            showToast(result.error || 'Failed to send test notification', 'error');
+        }
+    } catch (error) {
+        console.error('Test notification error:', error);
+        showToast('An error occurred while sending test notification', 'error');
+    }
+}
+
+// Export Profile Data
+async function exportProfile() {
+    try {
+        showLoading('Preparing profile data...');
+        
+        const response = await fetch('/profile/export');
+        const blob = await response.blob();
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `profile-data-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        showToast('Profile data exported successfully!', 'success');
+    } catch (error) {
+        console.error('Export profile error:', error);
+        showToast('Failed to export profile data', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Reset Functions
+function resetGeneralForm() {
+    document.getElementById('profileForm').reset();
+    document.getElementById('display_name').value = '<%= user.display_name || user.username %>';
+    document.getElementById('email').value = '<%= user.email %>';
+    document.getElementById('bio').value = '<%= user.bio || "" %>';
+    document.getElementById('location').value = '<%= user.location || "" %>';
+    document.getElementById('website').value = '<%= user.website || "" %>';
+}
+
+// Utility Functions
+function getActivityIcon(action) {
+    const icons = {
+        'login': 'sign-in-alt',
+        'logout': 'sign-out-alt',
+        'profile_update': 'user-edit',
+        'password_change': 'key',
+        'server_create': 'server',
+        'server_start': 'play',
+        'server_stop': 'stop',
+        'default': 'circle'
+    };
+    return icons[action] || icons.default;
+}
+
+function getSecurityIcon(eventType) {
+    const icons = {
+        'login': 'sign-in-alt',
+        'logout': 'sign-out-alt',
+        'password_change': 'key',
+        'email_change': 'envelope',
+        'failed_login': 'exclamation-triangle',
+        'account_locked': 'lock',
+        'two_factor_enabled': 'shield-alt',
+        'two_factor_disabled': 'shield-alt',
+        'default': 'shield-alt'
+    };
+    return icons[eventType] || icons.default;
+}
+
+function formatSecurityEvent(eventType) {
+    const events = {
+        'login': 'Successful Login',
+        'logout': 'Logout',
+        'password_change': 'Password Changed',
+        'email_change': 'Email Changed',
+        'failed_login': 'Failed Login Attempt',
+        'account_locked': 'Account Locked',
+        'two_factor_enabled': '2FA Enabled',
+        'two_factor_disabled': '2FA Disabled'
+    };
+    return events[eventType] || eventType.replace('_', ' ').toUpperCase();
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
+    
+    return date.toLocaleDateString();
+}
+
+// Loading and Toast Functions
+function showLoading(message = 'Loading...') {
+    // Create or update loading overlay
+    let overlay = document.getElementById('loadingOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'loadingOverlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            color: white;
+            font-size: 16px;
+        `;
+        document.body.appendChild(overlay);
+    }
+    overlay.innerHTML = `<div><i class="fas fa-spinner fa-spin"></i> ${message}</div>`;
+    overlay.style.display = 'flex';
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type}`;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        min-width: 300px;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+    `;
+    
+    const icon = type === 'success' ? 'check-circle' : 
+                 type === 'error' ? 'exclamation-circle' : 
+                 type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+    
+    toast.innerHTML = `
+        <i class="fas fa-${icon}"></i>
+        <span>${message}</span>
+        <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 300);
+    }, 5000);
+}
+</script>

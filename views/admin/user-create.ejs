@@ -1,0 +1,243 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-user-plus"></i>
+            Create New User
+        </h1>
+        <p class="page-subtitle">Add a new user to the panel</p>
+    </div>
+    <a href="/admin/users" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to Users
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-user-circle" style="color: var(--accent-primary);"></i>
+                    User Information
+                </h3>
+            </div>
+            <div class="card-body">
+                <form id="createUserForm" method="post" action="/admin/users/create">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-user"></i>
+                            Username *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="text" name="username" class="form-control" placeholder="Enter username" required minlength="3" maxlength="32" pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, underscores, and hyphens allowed">
+                            <i class="fas fa-user input-icon"></i>
+                        </div>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            3-32 characters, letters, numbers, underscores, and hyphens only
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-envelope"></i>
+                            Email Address *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="email" name="email" class="form-control" placeholder="user@example.com" required>
+                            <i class="fas fa-envelope input-icon"></i>
+                        </div>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Must be a valid email address
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-lock"></i>
+                            Password *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="password" name="password" id="password" class="form-control" placeholder="Enter password" required minlength="6">
+                            <i class="fas fa-lock input-icon"></i>
+                        </div>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Minimum 6 characters
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-lock"></i>
+                            Confirm Password *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="password" name="confirmPassword" id="confirmPassword" class="form-control" placeholder="Confirm password" required minlength="6">
+                            <i class="fas fa-lock-keyhole input-icon"></i>
+                        </div>
+                        <span class="form-help" id="passwordMatch"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-user-tag"></i>
+                            Role *
+                        </label>
+                        <select name="role" class="form-control" required>
+                            <option value="user">User - Regular panel user</option>
+                            <option value="admin">Admin - Full panel access</option>
+                        </select>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Admins have full access to all panel features
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-toggle-on"></i>
+                            Status
+                        </label>
+                        <select name="status" class="form-control">
+                            <option value="active">Active - User can login</option>
+                            <option value="suspended">Suspended - User cannot login</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-primary);">
+                        <a href="/admin/users" class="btn btn-secondary">
+                            <i class="fas fa-times"></i>
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-user-plus"></i>
+                            Create User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-4">
+        <!-- Help Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-question-circle" style="color: var(--info);"></i>
+                    Help
+                </h3>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div>
+                        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-user" style="color: var(--accent-primary);"></i>
+                            Username
+                        </div>
+                        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                            Choose a unique username for the user. Only letters, numbers, underscores, and hyphens are allowed.
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-shield-alt" style="color: var(--warning);"></i>
+                            Password
+                        </div>
+                        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                            Set a strong password with at least 6 characters. The user can change it later.
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-crown" style="color: var(--warning);"></i>
+                            Admin Role
+                        </div>
+                        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                            Admins have full access to all panel features including user management and settings.
+                        </div>
+                    </div>
+
+                    <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; border-left: 3px solid var(--info);">
+                        <div style="font-size: 12px; color: var(--text-secondary);">
+                            <i class="fas fa-lightbulb" style="color: var(--info);"></i>
+                            <strong>Tip:</strong> You can edit user details anytime from the users list.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card">
+            <div class="card-header">
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-chart-bar" style="color: var(--success);"></i>
+                    Current Stats
+                </h3>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--text-secondary); font-size: 13px;">Total Users</span>
+                        <span style="font-weight: 600; color: var(--text-primary);">Loading...</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--text-secondary); font-size: 13px;">Admin Users</span>
+                        <span style="font-weight: 600; color: var(--warning);">Loading...</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--text-secondary); font-size: 13px;">Regular Users</span>
+                        <span style="font-weight: 600; color: var(--info);">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+
+<script>
+// Password match validation
+document.getElementById('confirmPassword').addEventListener('input', function() {
+    const password = document.getElementById('password').value;
+    const confirm = this.value;
+    const matchEl = document.getElementById('passwordMatch');
+    
+    if (confirm.length > 0) {
+        if (password === confirm) {
+            matchEl.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success);"></i> Passwords match';
+            matchEl.style.color = 'var(--success)';
+        } else {
+            matchEl.innerHTML = '<i class="fas fa-times-circle" style="color: var(--danger);"></i> Passwords do not match';
+            matchEl.style.color = 'var(--danger)';
+        }
+    } else {
+        matchEl.innerHTML = '';
+    }
+});
+
+// Form validation before submit
+document.getElementById('createUserForm').addEventListener('submit', function(e) {
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (password !== confirmPassword) {
+        e.preventDefault();
+        alert('Passwords do not match!');
+        return false;
+    }
+    
+    // Show loading state
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+});
+</script>

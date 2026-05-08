@@ -1,0 +1,1143 @@
+<%- include('../partials/header') %>
+
+<!-- Debug Info -->
+<script>
+console.log('=== SERVER SETTINGS PAGE DEBUG ===');
+console.log('Server object:', <%= JSON.stringify(server) %>);
+console.log('Active page:', '<%= activePage %>');
+console.log('Current page:', '<%= currentPage %>');
+console.log('Sidebar element:', document.querySelector('.sidebar'));
+console.log('Video background:', document.querySelector('.video-background'));
+console.log('Body classes:', document.body.className);
+console.log('==================================');
+</script>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-cog"></i>
+            Server Settings
+        </h1>
+        <p class="page-subtitle"><%= server.name %></p>
+    </div>
+    <a href="/servers/<%= server.id %>/dashboard" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to Server
+    </a>
+</div>
+
+<!-- General Settings -->
+<div class="card">
+    <div class="card-header">
+        <h3>General Settings</h3>
+    </div>
+    <div class="card-body">
+        <!-- Auto-Management Notice -->
+        <div class="alert alert-info" style="margin-bottom: 20px;">
+            <i class="fas fa-info-circle"></i>
+            <strong>Smart Management:</strong> RAM allocation and server port are automatically managed by the system for optimal performance and security. You can configure these settings through the Properties editor.
+        </div>
+        
+        <form onsubmit="saveSettings(event)">
+            <div class="form-group">
+                <label class="form-label">Server Name</label>
+                <input type="text" name="name" class="form-control" value="<%= server.name %>" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea name="description" class="form-control" rows="3" placeholder="Optional server description"><%= server.description || '' %></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i>
+                Save Settings
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Server Information -->
+<div class="card">
+    <div class="card-header">
+        <h3>Server Information</h3>
+    </div>
+    <div class="card-body">
+        <div class="system-info-grid">
+            <div class="info-item">
+                <span class="info-label">Server ID</span>
+                <span class="info-value">#<%= server.id %></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Server Type</span>
+                <span class="info-value"><%= server.server_type || 'vanilla' %></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Version</span>
+                <span class="info-value"><%= server.version || 'Latest' %></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">RAM Allocation</span>
+                <span class="info-value">
+                    <%= server.ram %> MB
+                    <span class="badge badge-info" style="margin-left: 8px; font-size: 10px;">AUTO-MANAGED</span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Server Port</span>
+                <span class="info-value">
+                    <%= server.port %>
+                    <span class="badge badge-primary" style="margin-left: 8px; font-size: 10px;">PROTECTED</span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Status</span>
+                <span class="info-value">
+                    <span class="badge <%= server.status === 'running' ? 'badge-success' : 'badge-danger' %>">
+                        <%= server.status %>
+                    </span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Created</span>
+                <span class="info-value"><%= new Date(server.created_at).toLocaleDateString() %></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Disk Usage</span>
+                <span class="info-value"><%= typeof diskUsage !== 'undefined' ? diskUsage : 'Calculating...' %></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Version Management -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-download"></i> Server Software & Version Management</h3>
+    </div>
+    <div class="card-body">
+        <form id="softwareChangeForm" onsubmit="changeSoftware(event)">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-server"></i>
+                            Server Software
+                        </label>
+                        <select name="serverType" id="serverTypeSelect" class="form-control" onchange="loadVersions()" required>
+                            <% Object.entries(serverSoftware).forEach(([category, softwares]) => { %>
+                                <optgroup label="<%= category %>">
+                                    <% softwares.forEach(software => { %>
+                                        <option value="<%= software.key %>" 
+                                                <%= server.server_type === software.key ? 'selected' : '' %>
+                                                data-color="<%= software.color %>"
+                                                data-icon="<%= software.icon %>">
+                                            <%= software.name %> - <%= software.description %>
+                                        </option>
+                                    <% }) %>
+                                </optgroup>
+                            <% }) %>
+                        </select>
+                        <small class="form-text text-muted">
+                            Current: <strong><%= server.server_type || 'vanilla' %></strong>
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-tag"></i>
+                            Minecraft Version
+                        </label>
+                        
+                        <!-- Version Selection Mode Toggle -->
+                        <div class="version-mode-toggle">
+                            <button type="button" class="btn btn-sm btn-outline-primary active" onclick="toggleVersionMode('preset')" id="presetModeBtn">
+                                <i class="fas fa-list"></i> Preset Versions
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleVersionMode('custom')" id="customModeBtn">
+                                <i class="fas fa-edit"></i> Custom Version
+                            </button>
+                        </div>
+                        
+                        <!-- Preset Version Selection -->
+                        <div id="presetVersionContainer">
+                            <select name="version" id="versionSelect" class="form-control" required>
+                                <option value="<%= server.version %>"><%= server.version %> (Current)</option>
+                                <% if (typeof versions !== 'undefined' && versions && versions.length > 0) { %>
+                                    <% versions.forEach(v => { %>
+                                        <% if (v !== server.version) { %>
+                                            <option value="<%= v %>"><%= v %></option>
+                                        <% } %>
+                                    <% }) %>
+                                <% } %>
+                            </select>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Showing <span id="versionCount"><%= versions ? versions.length : 0 %></span> available versions
+                            </small>
+                        </div>
+                        
+                        <!-- Custom Version Input -->
+                        <div id="customVersionContainer" style="display: none;">
+                            <div class="input-group">
+                                <input type="text" id="customVersionInput" class="form-control" 
+                                       placeholder="Enter version (e.g., 1.20.1, 20w14a, latest)" 
+                                       pattern="^(\d+\.\d+(\.\d+)?(-\w+)?|\d+w\d+[a-z]|latest|snapshot)$">
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="validateCustomVersion()">
+                                        <i class="fas fa-check"></i> Validate
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="customVersionFeedback" class="mt-2"></div>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-lightbulb"></i>
+                                <strong>Supported formats:</strong> 1.20.1, 1.19.4-pre1, 20w14a, latest, snapshot
+                            </small>
+                        </div>
+                        
+                        <small class="form-text text-muted mt-2">
+                            Current: <strong><%= server.version %></strong>
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Software Information Display -->
+            <div id="softwareInfo" class="software-info-card">
+                <div class="software-info-content">
+                    <div class="software-icon">
+                        <i class="fas fa-cube" style="color: #8B4513;"></i>
+                    </div>
+                    <div class="software-details">
+                        <h4 id="softwareName">Vanilla</h4>
+                        <p id="softwareDescription">Official Minecraft server software from Mojang</p>
+                        <div class="software-features" id="softwareFeatures">
+                            <span class="feature-badge">plugins: false</span>
+                            <span class="feature-badge">mods: false</span>
+                            <span class="feature-badge">datapacks: true</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span><strong>Important:</strong> Changing server software or version will require a server restart and may need additional setup. Always backup your server before making changes!</span>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sync-alt"></i>
+                    Update Server Software
+                </button>
+                <button type="button" class="btn btn-info" onclick="showSoftwareGuide()">
+                    <i class="fas fa-question-circle"></i>
+                    Software Guide
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Danger Zone -->
+<div class="card" style="border-color: var(--danger);">
+    <div class="card-header" style="background: rgba(230, 57, 70, 0.1); border-color: var(--danger);">
+        <h3 style="color: var(--danger);">
+            <i class="fas fa-exclamation-triangle"></i>
+            Danger Zone
+        </h3>
+    </div>
+    <div class="card-body">
+        <div style="margin-bottom: 20px;">
+            <h4 style="font-size: 16px; margin-bottom: 8px;">Reinstall Server</h4>
+            <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 12px;">
+                Reinstall the server software. This will delete all server files except worlds and configs.
+            </p>
+            <button class="btn btn-warning" onclick="reinstallServer()">
+                <i class="fas fa-redo"></i>
+                Reinstall Server
+            </button>
+        </div>
+
+        <div>
+            <h4 style="font-size: 16px; margin-bottom: 8px; color: var(--danger);">Delete Server</h4>
+            <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 12px;">
+                Permanently delete this server and all its files. This action cannot be undone!
+            </p>
+            <button class="btn btn-danger" onclick="deleteServer()">
+                <i class="fas fa-trash"></i>
+                Delete Server
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function saveSettings(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Show loading state
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    btn.disabled = true;
+    
+    fetch('/servers/<%= server.id %>/settings/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(res => {
+        if (res.ok) {
+            return res.json().catch(() => ({ success: true })); // Handle redirect responses
+        } else {
+            return res.json().catch(() => ({ error: 'Server error' }));
+        }
+    })
+    .then(data => {
+        if (data.success !== false) {
+            showToast('success', '✅ Settings saved successfully!');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('error', '❌ Error: ' + (data.error || 'Failed to save settings'));
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showToast('error', '❌ An error occurred while saving settings');
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+function changeSoftware(e) {
+    e.preventDefault();
+    
+    const serverType = e.target.serverType.value;
+    let version;
+    
+    // Check which version mode is active
+    if (currentVersionMode === 'custom') {
+        version = document.getElementById('customVersionInput').value.trim();
+        if (!customVersionValid) {
+            showToast('error', '❌ Please validate your custom version first');
+            return;
+        }
+    } else {
+        version = e.target.version.value;
+    }
+    
+    if (!version) {
+        showToast('error', '❌ Please select or enter a version');
+        return;
+    }
+    
+    if (!confirm(`Change server software to ${serverType} ${version}? This will update the server configuration and may require additional setup. Make sure you have a backup!`)) return;
+    
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating Software...';
+    
+    fetch('/servers/<%= server.id %>/settings/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            name: '<%= server.name %>',
+            description: '<%= server.description || "" %>',
+            version: version,
+            serverType: serverType
+        })
+    })
+    .then(res => {
+        if (res.ok) {
+            return res.json().catch(() => ({ success: true }));
+        } else {
+            return res.json().catch(() => ({ error: 'Server error' }));
+        }
+    })
+    .then(data => {
+        if (data.success !== false) {
+            showToast('success', '✅ Server software updated successfully! Restart the server to apply changes.');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast('error', '❌ Error: ' + (data.error || 'Failed to update server software'));
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showToast('error', '❌ An error occurred while updating server software');
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
+}
+
+// Load versions when server type changes
+async function loadVersions() {
+    const serverType = document.getElementById('serverTypeSelect').value;
+    const versionSelect = document.getElementById('versionSelect');
+    
+    // Show loading state
+    versionSelect.innerHTML = '<option>Loading versions...</option>';
+    versionSelect.disabled = true;
+    
+    try {
+        const response = await fetch(`/servers/<%= server.id %>/settings/versions/${serverType}`);
+        const data = await response.json();
+        
+        if (data.success && data.versions) {
+            versionSelect.innerHTML = '';
+            data.versions.forEach(version => {
+                const option = document.createElement('option');
+                option.value = version;
+                option.textContent = version;
+                versionSelect.appendChild(option);
+            });
+            
+            // Select the first version by default
+            if (data.versions.length > 0) {
+                versionSelect.value = data.versions[0];
+            }
+        } else {
+            versionSelect.innerHTML = '<option>Error loading versions</option>';
+        }
+    } catch (err) {
+        console.error('Error loading versions:', err);
+        versionSelect.innerHTML = '<option>Error loading versions</option>';
+    } finally {
+        versionSelect.disabled = false;
+    }
+    
+    // Update software info display
+    updateSoftwareInfo(serverType);
+}
+
+// Update software information display
+function updateSoftwareInfo(serverType) {
+    const softwareData = {
+        vanilla: { name: 'Vanilla', description: 'Official Minecraft server software from Mojang', icon: 'fas fa-cube', color: '#8B4513', features: ['plugins: false', 'mods: false', 'datapacks: true'] },
+        paper: { name: 'Paper', description: 'High-performance Spigot fork with optimizations and bug fixes', icon: 'fas fa-scroll', color: '#2196F3', features: ['plugins: true', 'mods: false', 'datapacks: true'] },
+        purpur: { name: 'Purpur', description: 'Paper fork with additional features and configuration options', icon: 'fas fa-gem', color: '#9C27B0', features: ['plugins: true', 'mods: false', 'datapacks: true'] },
+        spigot: { name: 'Spigot', description: 'Popular server software with plugin support and performance improvements', icon: 'fas fa-fire', color: '#FF9800', features: ['plugins: true', 'mods: false', 'datapacks: true'] },
+        bukkit: { name: 'CraftBukkit', description: 'Original modded server software with plugin API', icon: 'fas fa-hammer', color: '#795548', features: ['plugins: true', 'mods: false', 'datapacks: true'] },
+        fabric: { name: 'Fabric', description: 'Lightweight modding platform for modern Minecraft versions', icon: 'fas fa-thread', color: '#4CAF50', features: ['plugins: false', 'mods: true', 'datapacks: true'] },
+        forge: { name: 'Forge', description: 'Popular modding platform with extensive mod ecosystem', icon: 'fas fa-anvil', color: '#FF5722', features: ['plugins: false', 'mods: true', 'datapacks: true'] },
+        quilt: { name: 'Quilt', description: 'Modern modding platform forked from Fabric with enhanced features', icon: 'fas fa-puzzle-piece', color: '#673AB7', features: ['plugins: false', 'mods: true', 'datapacks: true'] },
+        velocity: { name: 'Velocity', description: 'Modern, high-performance Minecraft proxy server', icon: 'fas fa-rocket', color: '#00BCD4', features: ['plugins: true', 'networks: true', 'modern: true'] },
+        bungeecord: { name: 'BungeeCord', description: 'Popular proxy server for connecting multiple Minecraft servers', icon: 'fas fa-network-wired', color: '#FF6B35', features: ['plugins: true', 'networks: true', 'legacy: true'] },
+        waterfall: { name: 'Waterfall', description: 'Paper fork of BungeeCord with performance improvements', icon: 'fas fa-water', color: '#2196F3', features: ['plugins: true', 'networks: true', 'optimized: true'] },
+        bedrock: { name: 'Bedrock Dedicated Server', description: 'Official Minecraft Bedrock Edition server', icon: 'fas fa-mobile-alt', color: '#4CAF50', features: ['crossplay: true', 'mobile: true', 'console: true'] },
+        nukkit: { name: 'Nukkit', description: 'Third-party Bedrock Edition server with plugin support', icon: 'fas fa-atom', color: '#9C27B0', features: ['plugins: true', 'crossplay: true', 'mobile: true'] },
+        mohist: { name: 'Mohist', description: 'Forge + Bukkit hybrid server supporting both mods and plugins', icon: 'fas fa-layer-group', color: '#607D8B', features: ['plugins: true', 'mods: true', 'hybrid: true'] },
+        catserver: { name: 'CatServer', description: 'High-performance Forge + Bukkit server implementation', icon: 'fas fa-cat', color: '#FF9800', features: ['plugins: true', 'mods: true', 'performance: true'] }
+    };
+    
+    const software = softwareData[serverType] || softwareData.vanilla;
+    
+    document.getElementById('softwareName').textContent = software.name;
+    document.getElementById('softwareDescription').textContent = software.description;
+    document.querySelector('.software-icon i').className = software.icon;
+    document.querySelector('.software-icon i').style.color = software.color;
+    
+    const featuresContainer = document.getElementById('softwareFeatures');
+    featuresContainer.innerHTML = '';
+    software.features.forEach(feature => {
+        const badge = document.createElement('span');
+        badge.className = 'feature-badge';
+        badge.textContent = feature;
+        featuresContainer.appendChild(badge);
+    });
+}
+
+// Show software guide modal
+function showSoftwareGuide() {
+    const guideContent = `
+        <div class="software-guide">
+            <h3>🎮 Minecraft Server Software Guide</h3>
+            
+            <div class="guide-section">
+                <h4>📦 Java Edition Servers</h4>
+                <ul>
+                    <li><strong>Vanilla:</strong> Official Mojang server - stable, no plugins/mods</li>
+                    <li><strong>Paper:</strong> High-performance with plugins - recommended for most servers</li>
+                    <li><strong>Purpur:</strong> Paper + extra features - great for advanced configurations</li>
+                    <li><strong>Spigot:</strong> Popular plugin platform - good compatibility</li>
+                    <li><strong>Fabric:</strong> Lightweight modding - modern versions</li>
+                    <li><strong>Forge:</strong> Extensive mod ecosystem - large mod selection</li>
+                </ul>
+            </div>
+            
+            <div class="guide-section">
+                <h4>🌐 Proxy Servers</h4>
+                <ul>
+                    <li><strong>Velocity:</strong> Modern proxy - best performance</li>
+                    <li><strong>BungeeCord:</strong> Classic proxy - wide compatibility</li>
+                    <li><strong>Waterfall:</strong> BungeeCord + optimizations</li>
+                </ul>
+            </div>
+            
+            <div class="guide-section">
+                <h4>📱 Bedrock Edition</h4>
+                <ul>
+                    <li><strong>Bedrock Server:</strong> Official cross-platform server</li>
+                    <li><strong>Nukkit:</strong> Third-party with plugin support</li>
+                </ul>
+            </div>
+            
+            <div class="guide-section">
+                <h4>🔧 Hybrid Servers</h4>
+                <ul>
+                    <li><strong>Mohist:</strong> Forge + Bukkit - mods + plugins</li>
+                    <li><strong>CatServer:</strong> High-performance hybrid</li>
+                </ul>
+            </div>
+        </div>
+    `;
+    
+    showModal('Server Software Guide', guideContent);
+}
+
+// Simple modal function
+function showModal(title, content) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        ">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--text-primary);">${title}</h2>
+                <button onclick="this.closest('.modal').remove()" style="
+                    background: none;
+                    border: none;
+                    font-size: 24px;
+                    cursor: pointer;
+                    color: var(--text-muted);
+                ">×</button>
+            </div>
+            <div style="color: var(--text-secondary);">${content}</div>
+        </div>
+    `;
+    
+    modal.className = 'modal';
+    document.body.appendChild(modal);
+    
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+// Initialize software info on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateSoftwareInfo('<%= server.server_type || "vanilla" %>');
+});
+
+// ================================================
+// ENHANCED VERSION MANAGEMENT SYSTEM
+// ================================================
+
+// Version mode management
+let currentVersionMode = 'preset';
+let customVersionValid = false;
+
+// Toggle between preset and custom version modes
+function toggleVersionMode(mode) {
+    currentVersionMode = mode;
+    
+    const presetContainer = document.getElementById('presetVersionContainer');
+    const customContainer = document.getElementById('customVersionContainer');
+    const presetBtn = document.getElementById('presetModeBtn');
+    const customBtn = document.getElementById('customModeBtn');
+    
+    if (mode === 'preset') {
+        presetContainer.style.display = 'block';
+        customContainer.style.display = 'none';
+        presetBtn.classList.add('active');
+        customBtn.classList.remove('active');
+        
+        // Enable preset select
+        document.getElementById('versionSelect').required = true;
+        document.getElementById('customVersionInput').required = false;
+    } else {
+        presetContainer.style.display = 'none';
+        customContainer.style.display = 'block';
+        presetBtn.classList.remove('active');
+        customBtn.classList.add('active');
+        
+        // Enable custom input
+        document.getElementById('versionSelect').required = false;
+        document.getElementById('customVersionInput').required = true;
+    }
+}
+
+// Validate custom version
+async function validateCustomVersion() {
+    const input = document.getElementById('customVersionInput');
+    const feedback = document.getElementById('customVersionFeedback');
+    const serverType = document.getElementById('serverTypeSelect').value;
+    const version = input.value.trim();
+    
+    if (!version) {
+        showVersionFeedback('error', 'Please enter a version');
+        return;
+    }
+    
+    // Show loading state
+    showVersionFeedback('info', '<i class="fas fa-spinner fa-spin"></i> Validating version...');
+    
+    try {
+        const response = await fetch('/servers/<%= server.id %>/settings/validate-version', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ version, serverType })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.valid) {
+                customVersionValid = true;
+                showVersionFeedback('success', `✅ ${data.message}`);
+                input.style.borderColor = 'var(--success)';
+            } else {
+                customVersionValid = false;
+                showVersionFeedback('error', `❌ ${data.message}`);
+                input.style.borderColor = 'var(--danger)';
+            }
+        } else {
+            customVersionValid = false;
+            showVersionFeedback('error', '❌ Validation failed');
+            input.style.borderColor = 'var(--danger)';
+        }
+    } catch (err) {
+        console.error('Validation error:', err);
+        customVersionValid = false;
+        showVersionFeedback('error', '❌ Network error during validation');
+        input.style.borderColor = 'var(--danger)';
+    }
+}
+
+// Show version validation feedback
+function showVersionFeedback(type, message) {
+    const feedback = document.getElementById('customVersionFeedback');
+    
+    let className = 'alert alert-';
+    if (type === 'success') className += 'success';
+    else if (type === 'error') className += 'danger';
+    else if (type === 'warning') className += 'warning';
+    else className += 'info';
+    
+    feedback.innerHTML = `<div class="${className}" style="padding: 8px 12px; margin: 0; font-size: 13px;">${message}</div>`;
+}
+
+// Enhanced loadVersions function with complete version list
+async function loadVersionsEnhanced() {
+    const serverType = document.getElementById('serverTypeSelect').value;
+    const versionSelect = document.getElementById('versionSelect');
+    const versionCount = document.getElementById('versionCount');
+    
+    // Show loading state
+    versionSelect.innerHTML = '<option>Loading versions...</option>';
+    versionSelect.disabled = true;
+    if (versionCount) versionCount.textContent = '...';
+    
+    try {
+        const response = await fetch(`/servers/<%= server.id %>/settings/versions/${serverType}`);
+        const data = await response.json();
+        
+        if (data.success && data.versions) {
+            versionSelect.innerHTML = '';
+            
+            // Add current version first if not in list
+            const currentVersion = '<%= server.version %>';
+            if (!data.versions.includes(currentVersion)) {
+                const currentOption = document.createElement('option');
+                currentOption.value = currentVersion;
+                currentOption.textContent = `${currentVersion} (Current)`;
+                currentOption.selected = true;
+                versionSelect.appendChild(currentOption);
+            }
+            
+            // Add all available versions
+            data.versions.forEach((version, index) => {
+                const option = document.createElement('option');
+                option.value = version;
+                option.textContent = version;
+                
+                // Mark current version
+                if (version === currentVersion) {
+                    option.textContent += ' (Current)';
+                    option.selected = true;
+                }
+                
+                versionSelect.appendChild(option);
+            });
+            
+            // Update version count
+            if (versionCount) versionCount.textContent = data.versions.length;
+            
+            // Select the first version by default if current not found
+            if (!data.versions.includes(currentVersion) && data.versions.length > 0) {
+                versionSelect.selectedIndex = 1; // Skip current version option
+            }
+        } else {
+            versionSelect.innerHTML = '<option>Error loading versions</option>';
+            if (versionCount) versionCount.textContent = '0';
+        }
+    } catch (err) {
+        console.error('Error loading versions:', err);
+        versionSelect.innerHTML = '<option>Error loading versions</option>';
+        if (versionCount) versionCount.textContent = '0';
+    } finally {
+        versionSelect.disabled = false;
+    }
+    
+    // Update software info display
+    updateSoftwareInfo(serverType);
+}
+
+// Initialize enhanced version system
+document.addEventListener('DOMContentLoaded', function() {
+    const customInput = document.getElementById('customVersionInput');
+    if (customInput) {
+        customInput.addEventListener('input', function() {
+            const feedback = document.getElementById('customVersionFeedback');
+            this.style.borderColor = '';
+            if (feedback) feedback.innerHTML = '';
+            customVersionValid = false;
+        });
+        
+        // Validate on Enter key
+        customInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                validateCustomVersion();
+            }
+        });
+    }
+    
+    // Override the original functions if enhanced elements exist
+    if (document.getElementById('customVersionContainer')) {
+        // Replace the form onsubmit
+        const form = document.querySelector('form[onsubmit*="changeSoftware"]');
+        if (form) {
+            form.onsubmit = changeSoftwareEnhanced;
+        }
+        
+        // Replace the select onchange
+        const select = document.getElementById('serverTypeSelect');
+        if (select) {
+            select.onchange = loadVersionsEnhanced;
+        }
+    }
+});
+
+function reinstallServer() {
+    if (!confirm('Reinstall server? This will delete all server files except worlds and configs!')) return;
+    if (!confirm('Are you absolutely sure? This action cannot be undone!')) return;
+    
+    showToast('info', '🔄 Starting server reinstallation...');
+    
+    fetch('/servers/<%= server.id %>/settings/reinstall', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => {
+        if (res.ok) {
+            return res.json().catch(() => ({ success: true }));
+        } else {
+            return res.json().catch(() => ({ error: 'Server error' }));
+        }
+    })
+    .then(data => {
+        if (data.success !== false) {
+            showToast('success', '✅ Server reinstalled successfully!');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast('error', '❌ Error: ' + (data.error || 'Failed to reinstall server'));
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showToast('error', '❌ An error occurred during reinstallation');
+    });
+}
+
+function deleteServer() {
+    if (!confirm('DELETE THIS SERVER? All files will be permanently deleted!')) return;
+    
+    const confirmText = prompt('Type "<%= server.name %>" to confirm deletion:');
+    if (confirmText !== '<%= server.name %>') {
+        showToast('warning', '⚠️ Server name does not match. Deletion cancelled.');
+        return;
+    }
+    
+    showToast('info', '🗑️ Deleting server...');
+    
+    fetch('/servers/<%= server.id %>/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', '✅ Server deleted successfully!');
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 1500);
+        } else {
+            showToast('error', '❌ Error: ' + (data.error || 'Failed to delete server'));
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showToast('error', '❌ An error occurred during deletion');
+    });
+}
+
+// Enhanced toast notification system (same as properties editor)
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    
+    let bgColor, icon;
+    if (type === 'success') {
+        bgColor = 'linear-gradient(45deg, #28a745, #34ce57)';
+        icon = 'fas fa-check-circle';
+    } else if (type === 'error') {
+        bgColor = 'linear-gradient(45deg, #dc3545, #e74c3c)';
+        icon = 'fas fa-exclamation-circle';
+    } else if (type === 'warning') {
+        bgColor = 'linear-gradient(45deg, #ffc107, #ffcd39)';
+        icon = 'fas fa-exclamation-triangle';
+    } else {
+        bgColor = 'linear-gradient(45deg, var(--primary), #3b82f6)';
+        icon = 'fas fa-info-circle';
+    }
+    
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${bgColor};
+        color: white;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        z-index: 10001;
+        max-width: 400px;
+        font-size: 14px;
+        font-weight: 500;
+        animation: slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        backdrop-filter: blur(10px);
+    `;
+    
+    toast.innerHTML = `
+        <i class="${icon}" style="font-size: 18px;"></i>
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()" style="
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: auto;
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+        " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.animation = 'slideOutRight 0.4s ease';
+            setTimeout(() => toast.remove(), 400);
+        }
+    }, 5000);
+}
+
+// Add enhanced CSS animations
+const enhancedStyle = document.createElement('style');
+enhancedStyle.textContent = `
+    @keyframes slideInRight {
+        from { transform: translateX(400px) scale(0.8); opacity: 0; }
+        to { transform: translateX(0) scale(1); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+        from { transform: translateX(0) scale(1); opacity: 1; }
+        to { transform: translateX(400px) scale(0.8); opacity: 0; }
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    /* Software Selection Styling */
+    .software-info-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02));
+        border: 2px solid var(--border-primary);
+        border-radius: 12px;
+        padding: 20px;
+        margin: 20px 0;
+        transition: all 0.3s ease;
+    }
+    
+    .software-info-card:hover {
+        border-color: var(--accent-primary);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.1);
+    }
+    
+    .software-info-content {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    
+    .software-icon {
+        flex-shrink: 0;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(59, 130, 246, 0.1);
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+    
+    .software-icon i {
+        font-size: 24px;
+        transition: all 0.3s ease;
+    }
+    
+    .software-details h4 {
+        margin: 0 0 8px 0;
+        color: var(--text-primary);
+        font-size: 18px;
+        font-weight: 600;
+    }
+    
+    .software-details p {
+        margin: 0 0 12px 0;
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.4;
+    }
+    
+    .software-features {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .feature-badge {
+        background: var(--accent-primary);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .guide-section {
+        margin-bottom: 20px;
+    }
+    
+    .guide-section h4 {
+        color: var(--accent-primary);
+        margin-bottom: 10px;
+        font-size: 16px;
+    }
+    
+    .guide-section ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+    
+    .guide-section li {
+        margin-bottom: 8px;
+        line-height: 1.4;
+    }
+    
+    .guide-section strong {
+        color: var(--text-primary);
+    }
+    
+    /* Version Mode Toggle Styling */
+    .version-mode-toggle {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding: 4px;
+        background: var(--bg-tertiary);
+        border-radius: 8px;
+        border: 1px solid var(--border-primary);
+    }
+    
+    .version-mode-toggle .btn {
+        flex: 1;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        border: none;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        background: transparent;
+        color: var(--text-muted);
+    }
+    
+    .version-mode-toggle .btn.active {
+        background: var(--accent-primary);
+        color: white;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+    
+    .version-mode-toggle .btn:hover:not(.active) {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--accent-primary);
+    }
+    
+    /* Custom Version Input Styling */
+    #customVersionContainer {
+        animation: fadeIn 0.3s ease;
+    }
+    
+    #presetVersionContainer {
+        animation: fadeIn 0.3s ease;
+    }
+    
+    .input-group {
+        display: flex;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid var(--border-primary);
+        transition: border-color 0.2s ease;
+    }
+    
+    .input-group:focus-within {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .input-group input {
+        flex: 1;
+        border: none;
+        padding: 10px 12px;
+        font-size: 14px;
+        background: transparent;
+        outline: none;
+        color: var(--text-primary);
+    }
+    
+    .input-group-append .btn {
+        border: none;
+        border-radius: 0;
+        padding: 10px 16px;
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border-left: 1px solid var(--border-primary);
+        transition: all 0.2s ease;
+    }
+    
+    .input-group-append .btn:hover {
+        background: var(--accent-primary);
+        color: white;
+    }
+    
+    /* Version Feedback Styling */
+    #customVersionFeedback .alert {
+        border-radius: 6px;
+        border: none;
+        font-weight: 500;
+    }
+    
+    #customVersionFeedback .alert-success {
+        background: linear-gradient(45deg, rgba(40, 167, 69, 0.1), rgba(52, 206, 87, 0.05));
+        color: var(--success);
+        border-left: 4px solid var(--success);
+    }
+    
+    #customVersionFeedback .alert-danger {
+        background: linear-gradient(45deg, rgba(220, 53, 69, 0.1), rgba(231, 76, 60, 0.05));
+        color: var(--danger);
+        border-left: 4px solid var(--danger);
+    }
+    
+    #customVersionFeedback .alert-info {
+        background: linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+        color: var(--accent-primary);
+        border-left: 4px solid var(--accent-primary);
+    }
+    
+    /* Version Count Badge */
+    #versionCount {
+        font-weight: 600;
+        color: var(--accent-primary);
+        background: rgba(59, 130, 246, 0.1);
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 11px;
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .software-info-content {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .form-actions .btn {
+            width: 100%;
+        }
+    }
+`;
+document.head.appendChild(enhancedStyle);
+</script>
+
+<%- include('../partials/footer') %>

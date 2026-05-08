@@ -1,0 +1,485 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-globe"></i>
+            World Management
+        </h1>
+        <p class="page-subtitle"><%= server.name %></p>
+    </div>
+    <div class="page-actions">
+        <a href="/servers/<%= server.id %>/worlds/marketplace" class="btn btn-success">
+            <i class="fas fa-store"></i>
+            World Marketplace
+        </a>
+        <button class="btn btn-primary" onclick="showUploadModal()">
+            <i class="fas fa-upload"></i>
+            Upload World
+        </button>
+    </div>
+</div>
+
+<!-- Current World -->
+<div class="card">
+    <div class="card-header">
+        <h3>Current World</h3>
+    </div>
+    <div class="card-body">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="stat-icon primary" style="width: 48px; height: 48px;">
+                <i class="fas fa-globe"></i>
+            </div>
+            <div style="flex: 1;">
+                <div style="font-size: 20px; font-weight: 600; margin-bottom: 4px;">
+                    <%= currentWorld || 'world' %>
+                </div>
+                <div style="color: var(--text-secondary); font-size: 14px;">
+                    Active world directory
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-warning" onclick="backupWorld()">
+                    <i class="fas fa-save"></i>
+                    Backup
+                </button>
+                <button class="btn btn-danger" onclick="resetWorld()">
+                    <i class="fas fa-redo"></i>
+                    Reset
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Available Worlds -->
+<div class="card">
+    <div class="card-header">
+        <h3>Available Worlds (<%= worlds ? worlds.length : 0 %>)</h3>
+    </div>
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>World Name</th>
+                    <th>Size</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (worlds && worlds.length > 0) { %>
+                    <% worlds.forEach(world => { %>
+                        <tr>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-globe" style="color: var(--primary);"></i>
+                                    <strong><%= world.name %></strong>
+                                    <% if (world.name === currentWorld) { %>
+                                        <span class="badge badge-success">Active</span>
+                                    <% } %>
+                                </div>
+                            </td>
+                            <td><%= world.size %></td>
+                            <td>
+                                <% if (world.name.includes('nether') || world.name.includes('DIM-1')) { %>
+                                    <span class="badge badge-danger">Nether</span>
+                                <% } else if (world.name.includes('end') || world.name.includes('DIM1')) { %>
+                                    <span class="badge badge-primary">End</span>
+                                <% } else { %>
+                                    <span class="badge badge-success">Overworld</span>
+                                <% } %>
+                            </td>
+                            <td>
+                                <% if (world.name === currentWorld) { %>
+                                    <span class="badge badge-success">In Use</span>
+                                <% } else { %>
+                                    <span class="badge badge-secondary">Available</span>
+                                <% } %>
+                            </td>
+                            <td>
+                                <button class="btn-icon btn-primary" onclick="downloadWorld('<%= world.name %>')" title="Download">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button class="btn-icon btn-warning" onclick="backupSpecificWorld('<%= world.name %>')" title="Backup">
+                                    <i class="fas fa-save"></i>
+                                </button>
+                                <% if (world.name !== currentWorld) { %>
+                                    <button class="btn-icon btn-success" onclick="switchWorld('<%= world.name %>')" title="Switch to this world">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                    <button class="btn-icon btn-danger" onclick="deleteWorld('<%= world.name %>')" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                <% } else { %>
+                                    <span class="badge badge-info" style="padding: 8px 12px;">
+                                        <i class="fas fa-info-circle"></i>
+                                        Currently Active
+                                    </span>
+                                <% } %>
+                            </td>
+                        </tr>
+                    <% }) %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <i class="fas fa-globe" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                            No worlds found
+                            <div style="margin-top: 16px;">
+                                <button class="btn btn-primary" onclick="showUploadModal()">
+                                    <i class="fas fa-upload"></i>
+                                    Upload World
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- World Statistics -->
+<div class="row">
+    <div class="col-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="stat-item">
+                    <i class="fas fa-globe"></i>
+                    <div>
+                        <div class="stat-value"><%= worlds ? worlds.length : 0 %></div>
+                        <div class="stat-label">Total Worlds</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="stat-item">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <div class="stat-value"><%= currentWorld || 'world' %></div>
+                        <div class="stat-label">Active World</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="stat-item">
+                    <i class="fas fa-hdd"></i>
+                    <div>
+                        <div class="stat-value">
+                            <% 
+                            let totalBytes = 0;
+                            if (worlds) {
+                                worlds.forEach(w => {
+                                    if (w.sizeBytes) totalBytes += w.sizeBytes;
+                                });
+                            }
+                            const totalGB = totalBytes / 1024 / 1024 / 1024;
+                            const totalMB = totalBytes / 1024 / 1024;
+                            %>
+                            <%= totalGB >= 1 ? totalGB.toFixed(2) + ' GB' : totalMB.toFixed(2) + ' MB' %>
+                        </div>
+                        <div class="stat-label">Total Size</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload World Modal -->
+<div class="modal" id="uploadModal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2>Upload World</h2>
+            <button class="modal-close" onclick="closeUploadModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="uploadForm" onsubmit="uploadWorld(event)">
+                <div class="form-group">
+                    <label>World Name</label>
+                    <input type="text" name="worldName" class="form-control" placeholder="e.g., my-custom-world" required>
+                    <small style="color: var(--text-muted);">Name for the world folder</small>
+                </div>
+                <div class="form-group">
+                    <label>World File (ZIP)</label>
+                    <input type="file" name="worldFile" class="form-control" accept=".zip" required>
+                    <small style="color: var(--text-muted);">Upload a ZIP file containing your world</small>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <span>The ZIP file should contain the world folder with level.dat and other world files.</span>
+                </div>
+                <div id="uploadProgress" style="display: none; margin-top: 16px;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="uploadProgressFill" style="width: 0%"></div>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; text-align: center;" id="uploadProgressText">
+                        Uploading...
+                    </div>
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeUploadModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="uploadBtn">
+                        <i class="fas fa-upload"></i>
+                        Upload World
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: auto;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 24px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--success));
+    transition: width 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+}
+</style>
+
+<script>
+const serverId = '<%= server.id %>';
+
+function showUploadModal() {
+    document.getElementById('uploadModal').style.display = 'flex';
+}
+
+function closeUploadModal() {
+    document.getElementById('uploadModal').style.display = 'none';
+    document.getElementById('uploadForm').reset();
+    document.getElementById('uploadProgress').style.display = 'none';
+}
+
+function uploadWorld(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const uploadBtn = document.getElementById('uploadBtn');
+    const progressDiv = document.getElementById('uploadProgress');
+    const progressFill = document.getElementById('uploadProgressFill');
+    const progressText = document.getElementById('uploadProgressText');
+    
+    uploadBtn.disabled = true;
+    progressDiv.style.display = 'block';
+    
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+            const percent = (e.loaded / e.total) * 100;
+            progressFill.style.width = percent + '%';
+            progressFill.textContent = Math.round(percent) + '%';
+            progressText.textContent = `Uploading... ${Math.round(percent)}%`;
+        }
+    });
+    
+    xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+            const data = JSON.parse(xhr.responseText);
+            if (data.success) {
+                progressText.textContent = 'Upload complete!';
+                setTimeout(() => {
+                    closeUploadModal();
+                    location.reload();
+                }, 1000);
+            } else {
+                alert('Error: ' + (data.error || 'Upload failed'));
+                uploadBtn.disabled = false;
+                progressDiv.style.display = 'none';
+            }
+        } else {
+            alert('Upload failed');
+            uploadBtn.disabled = false;
+            progressDiv.style.display = 'none';
+        }
+    });
+    
+    xhr.addEventListener('error', () => {
+        alert('Upload failed');
+        uploadBtn.disabled = false;
+        progressDiv.style.display = 'none';
+    });
+    
+    xhr.open('POST', `/servers/${serverId}/worlds/upload`);
+    xhr.send(formData);
+}
+
+function downloadWorld(worldName) {
+    window.location.href = `/servers/${serverId}/worlds/download/${encodeURIComponent(worldName)}`;
+}
+
+function deleteWorld(worldName) {
+    if (!confirm(`Are you sure you want to delete world "${worldName}"? This cannot be undone!`)) return;
+    
+    const confirmText = prompt(`Type "${worldName}" to confirm deletion:`);
+    if (confirmText !== worldName) {
+        alert('World name does not match. Deletion cancelled.');
+        return;
+    }
+    
+    fetch(`/servers/${serverId}/worlds/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worldName: worldName })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('World deleted successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to delete world'));
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('An error occurred');
+    });
+}
+
+function switchWorld(worldName) {
+    if (!confirm(`Switch to world "${worldName}"? The server will need to be restarted.`)) return;
+    
+    fetch(`/servers/${serverId}/worlds/switch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worldName: worldName })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('World switched successfully! Restart the server to load the new world.');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to switch world'));
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('An error occurred');
+    });
+}
+
+function resetWorld() {
+    if (!confirm('Are you sure you want to reset the current world? This will delete all world data and create a new world!')) return;
+    
+    if (!confirm('This action is IRREVERSIBLE. All progress will be lost. Continue?')) return;
+    
+    fetch(`/servers/${serverId}/worlds/reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('World reset successfully! Restart the server to generate a new world.');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to reset world'));
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('An error occurred');
+    });
+}
+
+function backupWorld() {
+    if (!confirm('Create a backup of the current world?')) return;
+    
+    fetch(`/servers/${serverId}/worlds/backup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('World backup created successfully!');
+        } else {
+            alert('Error: ' + (data.error || 'Failed to backup world'));
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('An error occurred');
+    });
+}
+
+function backupSpecificWorld(worldName) {
+    if (!confirm(`Create a backup of world "${worldName}"?`)) return;
+    
+    fetch(`/servers/${serverId}/worlds/backup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worldName: worldName })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Backup of "${worldName}" created successfully!`);
+        } else {
+            alert('Error: ' + (data.error || 'Failed to backup world'));
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('An error occurred');
+    });
+}
+
+// Close modal when clicking outside
+document.getElementById('uploadModal').addEventListener('click', function(e) {
+    if (e.target === this) closeUploadModal();
+});
+</script>
+
+<%- include('../partials/footer') %>

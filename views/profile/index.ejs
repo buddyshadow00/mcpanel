@@ -1,0 +1,611 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-user-cog"></i>
+            Profile Settings
+        </h1>
+        <p class="page-subtitle">Manage your account settings, preferences, and security</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-outline" onclick="exportProfile()">
+            <i class="fas fa-download"></i>
+            Export Data
+        </button>
+    </div>
+</div>
+
+<!-- Profile Statistics -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-server"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value"><%= stats.servers %></div>
+            <div class="stat-label">Servers</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-bell"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value"><%= stats.unreadNotifications %></div>
+            <div class="stat-label">Unread Notifications</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value"><%= stats.recentActivity %></div>
+            <div class="stat-label">Recent Activity</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-calendar"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value"><%= stats.accountAge %></div>
+            <div class="stat-label">Days Active</div>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Tabs -->
+<div class="tabs-container">
+    <div class="tabs-nav">
+        <button class="tab-btn active" data-tab="general">
+            <i class="fas fa-user"></i>
+            General
+        </button>
+        <button class="tab-btn" data-tab="appearance">
+            <i class="fas fa-palette"></i>
+            Appearance
+        </button>
+        <button class="tab-btn" data-tab="security">
+            <i class="fas fa-shield-alt"></i>
+            Security
+        </button>
+        <button class="tab-btn" data-tab="notifications">
+            <i class="fas fa-bell"></i>
+            Notifications
+        </button>
+        <button class="tab-btn" data-tab="preferences">
+            <i class="fas fa-cog"></i>
+            Preferences
+        </button>
+        <button class="tab-btn" data-tab="activity">
+            <i class="fas fa-history"></i>
+            Activity
+        </button>
+    </div>
+
+    <!-- General Tab -->
+    <div class="tab-content active" id="general">
+        <div class="row">
+            <div class="col-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-user"></i>
+                            Profile Information
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="profileForm">
+                            <div class="form-row">
+                                <div class="form-group col-6">
+                                    <label for="username">Username</label>
+                                    <input type="text" id="username" class="form-control" value="<%= user.username %>" disabled>
+                                    <small class="form-text">Username cannot be changed</small>
+                                </div>
+                                <div class="form-group col-6">
+                                    <label for="display_name">Display Name</label>
+                                    <input type="text" id="display_name" name="display_name" class="form-control" 
+                                           value="<%= user.display_name || user.username %>" 
+                                           placeholder="Enter your display name">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <input type="email" id="email" name="email" class="form-control" 
+                                       value="<%= user.email %>" required>
+                                <small class="form-text">Used for notifications and account recovery</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="bio">Bio</label>
+                                <textarea id="bio" name="bio" class="form-control" rows="3" 
+                                          placeholder="Tell us about yourself..."><%= user.bio || '' %></textarea>
+                                <small class="form-text">Brief description about yourself (optional)</small>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group col-6">
+                                    <label for="location">Location</label>
+                                    <input type="text" id="location" name="location" class="form-control" 
+                                           value="<%= user.location || '' %>" placeholder="City, Country">
+                                </div>
+                                <div class="form-group col-6">
+                                    <label for="website">Website</label>
+                                    <input type="url" id="website" name="website" class="form-control" 
+                                           value="<%= user.website || '' %>" placeholder="https://example.com">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="role">Role</label>
+                                <input type="text" id="role" class="form-control" value="<%= user.role %>" disabled>
+                                <small class="form-text">Your account role and permissions</small>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    Save Changes
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="resetGeneralForm()">
+                                    <i class="fas fa-undo"></i>
+                                    Reset
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-4">
+                <!-- Profile Picture -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-camera"></i>
+                            Profile Picture
+                        </h3>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="profile-picture-wrapper">
+                            <div class="profile-picture">
+                                <% if (user.profile_picture) { %>
+                                    <img src="<%= user.profile_picture %>" alt="Profile Picture" id="profilePicture">
+                                <% } else { %>
+                                    <div class="profile-placeholder" id="profilePicture">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                <% } %>
+                                <div class="profile-overlay">
+                                    <button class="btn btn-sm btn-primary" onclick="uploadProfilePicture()">
+                                        <i class="fas fa-camera"></i>
+                                    </button>
+                                    <% if (user.profile_picture) { %>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteProfilePicture()">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                        <small class="form-text">Recommended: 200x200px, max 2MB</small>
+                        <input type="file" id="profilePictureInput" accept="image/*" style="display: none;">
+                    </div>
+                </div>
+
+                <!-- Account Info -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-info-circle"></i>
+                            Account Information
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-item">
+                            <span class="info-label">Member Since</span>
+                            <span class="info-value"><%= user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown' %></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Last Updated</span>
+                            <span class="info-value"><%= user.updated_at ? new Date(user.updated_at).toLocaleDateString() : 'Never' %></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Account Status</span>
+                            <span class="info-value">
+                                <span class="badge badge-<%= (user.status === 'active') ? 'success' : 'danger' %>">
+                                    <%= user.status || 'active' %>
+                                </span>
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Last Login</span>
+                            <span class="info-value"><%= user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Unknown' %></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appearance Tab -->
+    <div class="tab-content" id="appearance">
+        <div class="row">
+            <div class="col-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-palette"></i>
+                            Theme & Appearance
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="appearanceForm">
+                            <div class="form-group">
+                                <label for="theme_preference">Theme Mode</label>
+                                <select id="theme_preference" name="theme_preference" class="form-control">
+                                    <option value="dark" <%= user.theme_preference === 'dark' ? 'selected' : '' %>>Dark Mode</option>
+                                    <option value="light" <%= user.theme_preference === 'light' ? 'selected' : '' %>>Light Mode</option>
+                                    <option value="auto" <%= user.theme_preference === 'auto' ? 'selected' : '' %>>Auto (System)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group col-6">
+                                    <label for="theme_primary_color">Primary Color</label>
+                                    <div class="color-picker-wrapper">
+                                        <input type="color" id="theme_primary_color" name="theme_primary_color" 
+                                               class="form-control color-picker" 
+                                               value="<%= user.theme_primary_color || '#2d6a4f' %>">
+                                        <div class="color-preview" id="primaryColorPreview"></div>
+                                    </div>
+                                    <small class="form-text">Main accent color for buttons and highlights</small>
+                                </div>
+
+                                <div class="form-group col-6">
+                                    <label for="theme_accent_color">Accent Color</label>
+                                    <div class="color-picker-wrapper">
+                                        <input type="color" id="theme_accent_color" name="theme_accent_color" 
+                                               class="form-control color-picker" 
+                                               value="<%= user.theme_accent_color || '#40916c' %>">
+                                        <div class="color-preview" id="accentColorPreview"></div>
+                                    </div>
+                                    <small class="form-text">Secondary color for hover effects</small>
+                                </div>
+                            </div>
+
+                            <div class="theme-presets">
+                                <label>Quick Presets</label>
+                                <div class="preset-colors">
+                                    <div class="preset-item" data-primary="#2d6a4f" data-accent="#40916c" title="Forest Green">
+                                        <div class="preset-primary" style="background: #2d6a4f;"></div>
+                                        <div class="preset-accent" style="background: #40916c;"></div>
+                                    </div>
+                                    <div class="preset-item" data-primary="#1e40af" data-accent="#3b82f6" title="Ocean Blue">
+                                        <div class="preset-primary" style="background: #1e40af;"></div>
+                                        <div class="preset-accent" style="background: #3b82f6;"></div>
+                                    </div>
+                                    <div class="preset-item" data-primary="#7c2d12" data-accent="#ea580c" title="Sunset Orange">
+                                        <div class="preset-primary" style="background: #7c2d12;"></div>
+                                        <div class="preset-accent" style="background: #ea580c;"></div>
+                                    </div>
+                                    <div class="preset-item" data-primary="#7c3aed" data-accent="#a855f7" title="Royal Purple">
+                                        <div class="preset-primary" style="background: #7c3aed;"></div>
+                                        <div class="preset-accent" style="background: #a855f7;"></div>
+                                    </div>
+                                    <div class="preset-item" data-primary="#dc2626" data-accent="#ef4444" title="Ruby Red">
+                                        <div class="preset-primary" style="background: #dc2626;"></div>
+                                        <div class="preset-accent" style="background: #ef4444;"></div>
+                                    </div>
+                                    <div class="preset-item" data-primary="#059669" data-accent="#10b981" title="Emerald Green">
+                                        <div class="preset-primary" style="background: #059669;"></div>
+                                        <div class="preset-accent" style="background: #10b981;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-primary" onclick="applyTheme()">
+                                    <i class="fas fa-eye"></i>
+                                    Preview Theme
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="resetTheme()">
+                                    <i class="fas fa-undo"></i>
+                                    Reset
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i>
+                                    Save Theme
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-globe"></i>
+                            Localization
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="language">Language</label>
+                            <select id="language" name="language" class="form-control">
+                                <option value="en" <%= user.language === 'en' ? 'selected' : '' %>>English</option>
+                                <option value="es" <%= user.language === 'es' ? 'selected' : '' %>>Español</option>
+                                <option value="fr" <%= user.language === 'fr' ? 'selected' : '' %>>Français</option>
+                                <option value="de" <%= user.language === 'de' ? 'selected' : '' %>>Deutsch</option>
+                                <option value="it" <%= user.language === 'it' ? 'selected' : '' %>>Italiano</option>
+                                <option value="pt" <%= user.language === 'pt' ? 'selected' : '' %>>Português</option>
+                                <option value="ru" <%= user.language === 'ru' ? 'selected' : '' %>>Русский</option>
+                                <option value="ja" <%= user.language === 'ja' ? 'selected' : '' %>>日本語</option>
+                                <option value="ko" <%= user.language === 'ko' ? 'selected' : '' %>>한국어</option>
+                                <option value="zh" <%= user.language === 'zh' ? 'selected' : '' %>>中文</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="timezone">Timezone</label>
+                            <select id="timezone" name="timezone" class="form-control">
+                                <option value="UTC" <%= user.timezone === 'UTC' ? 'selected' : '' %>>UTC</option>
+                                <option value="America/New_York" <%= user.timezone === 'America/New_York' ? 'selected' : '' %>>Eastern Time</option>
+                                <option value="America/Chicago" <%= user.timezone === 'America/Chicago' ? 'selected' : '' %>>Central Time</option>
+                                <option value="America/Denver" <%= user.timezone === 'America/Denver' ? 'selected' : '' %>>Mountain Time</option>
+                                <option value="America/Los_Angeles" <%= user.timezone === 'America/Los_Angeles' ? 'selected' : '' %>>Pacific Time</option>
+                                <option value="Europe/London" <%= user.timezone === 'Europe/London' ? 'selected' : '' %>>London</option>
+                                <option value="Europe/Paris" <%= user.timezone === 'Europe/Paris' ? 'selected' : '' %>>Paris</option>
+                                <option value="Europe/Berlin" <%= user.timezone === 'Europe/Berlin' ? 'selected' : '' %>>Berlin</option>
+                                <option value="Asia/Tokyo" <%= user.timezone === 'Asia/Tokyo' ? 'selected' : '' %>>Tokyo</option>
+                                <option value="Asia/Shanghai" <%= user.timezone === 'Asia/Shanghai' ? 'selected' : '' %>>Shanghai</option>
+                                <option value="Australia/Sydney" <%= user.timezone === 'Australia/Sydney' ? 'selected' : '' %>>Sydney</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Tab -->
+    <div class="tab-content" id="security">
+        <div class="row">
+            <div class="col-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-lock"></i>
+                            Change Password
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="passwordForm">
+                            <div class="form-group">
+                                <label for="current_password">Current Password</label>
+                                <input type="password" id="current_password" name="current_password" class="form-control" required>
+                                <small class="form-text">Required to change password</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="new_password">New Password</label>
+                                <input type="password" id="new_password" name="new_password" class="form-control" required>
+                                <div class="password-strength" id="passwordStrength"></div>
+                                <small class="form-text">Minimum 6 characters, include numbers and special characters</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="confirm_password">Confirm New Password</label>
+                                <input type="password" id="confirm_password" class="form-control" required>
+                                <small class="form-text">Must match new password</small>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-key"></i>
+                                    Change Password
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-shield-alt"></i>
+                            Two-Factor Authentication
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="security-option">
+                            <div class="security-option-info">
+                                <h4>Two-Factor Authentication</h4>
+                                <p>Add an extra layer of security to your account by requiring a verification code from your phone.</p>
+                            </div>
+                            <div class="security-option-action">
+                                <% if (user.two_factor_enabled) { %>
+                                    <span class="badge badge-success">Enabled</span>
+                                    <button class="btn btn-outline btn-sm" onclick="disableTwoFactor()">
+                                        <i class="fas fa-times"></i>
+                                        Disable
+                                    </button>
+                                <% } else { %>
+                                    <span class="badge badge-warning">Disabled</span>
+                                    <button class="btn btn-primary btn-sm" onclick="enableTwoFactor()">
+                                        <i class="fas fa-mobile-alt"></i>
+                                        Enable
+                                    </button>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-history"></i>
+                            Security Log
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="securityLog">
+                            <div class="loading">Loading security events...</div>
+                        </div>
+                        <button class="btn btn-outline btn-sm btn-block" onclick="loadSecurityLog()">
+                            <i class="fas fa-refresh"></i>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Tab -->
+    <div class="tab-content" id="notifications">
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-bell"></i>
+                    Notification Preferences
+                </h3>
+            </div>
+            <div class="card-body">
+                <form id="notificationForm">
+                    <div class="row">
+                        <div class="col-6">
+                            <h4>General Settings</h4>
+                            
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input type="checkbox" id="email_notifications" name="email_notifications" 
+                                           class="form-check-input" <%= user.email_notifications ? 'checked' : '' %>>
+                                    <label for="email_notifications" class="form-check-label">
+                                        <i class="fas fa-envelope"></i>
+                                        Email Notifications
+                                    </label>
+                                </div>
+                                <small class="form-text">Receive notifications via email</small>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input type="checkbox" id="push_notifications" name="push_notifications" 
+                                           class="form-check-input" <%= user.push_notifications ? 'checked' : '' %>>
+                                    <label for="push_notifications" class="form-check-label">
+                                        <i class="fas fa-mobile-alt"></i>
+                                        Push Notifications
+                                    </label>
+                                </div>
+                                <small class="form-text">Receive browser push notifications</small>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input type="checkbox" id="security_notifications" name="security_notifications" 
+                                           class="form-check-input" <%= user.security_notifications ? 'checked' : '' %>>
+                                    <label for="security_notifications" class="form-check-label">
+                                        <i class="fas fa-shield-alt"></i>
+                                        Security Notifications
+                                    </label>
+                                </div>
+                                <small class="form-text">Important security alerts (always recommended)</small>
+                            </div>
+                        </div>
+
+                        <div class="col-6">
+                            <h4>Advanced Settings</h4>
+                            
+                            <div class="form-group">
+                                <label for="notification_frequency">Notification Frequency</label>
+                                <select id="notification_frequency" name="notification_frequency" class="form-control">
+                                    <option value="immediate" <%= user.notification_frequency === 'immediate' ? 'selected' : '' %>>Immediate</option>
+                                    <option value="hourly" <%= user.notification_frequency === 'hourly' ? 'selected' : '' %>>Hourly Digest</option>
+                                    <option value="daily" <%= user.notification_frequency === 'daily' ? 'selected' : '' %>>Daily Digest</option>
+                                    <option value="weekly" <%= user.notification_frequency === 'weekly' ? 'selected' : '' %>>Weekly Digest</option>
+                                </select>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group col-6">
+                                    <label for="quiet_hours_start">Quiet Hours Start</label>
+                                    <input type="time" id="quiet_hours_start" name="quiet_hours_start" 
+                                           class="form-control" value="<%= user.quiet_hours_start || '' %>">
+                                </div>
+                                <div class="form-group col-6">
+                                    <label for="quiet_hours_end">Quiet Hours End</label>
+                                    <input type="time" id="quiet_hours_end" name="quiet_hours_end" 
+                                           class="form-control" value="<%= user.quiet_hours_end || '' %>">
+                                </div>
+                            </div>
+                            <small class="form-text">No notifications during quiet hours</small>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Save Notification Settings
+                        </button>
+                        <button type="button" class="btn btn-outline" onclick="testNotification()">
+                            <i class="fas fa-bell"></i>
+                            Send Test Notification
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preferences Tab -->
+    <div class="tab-content" id="preferences">
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-cog"></i>
+                    System Preferences
+                </h3>
+            </div>
+            <div class="card-body">
+                <p>Additional preferences and settings will be available here in future updates.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Tab -->
+    <div class="tab-content" id="activity">
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-history"></i>
+                    Account Activity
+                </h3>
+                <div class="card-actions">
+                    <button class="btn btn-outline btn-sm" onclick="loadActivity()">
+                        <i class="fas fa-refresh"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="activityLog">
+                    <div class="loading">Loading activity log...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('./profile-styles') %>
+<%- include('./profile-scripts') %>
+
+<%- include('../partials/footer') %>

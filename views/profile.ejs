@@ -1,0 +1,497 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-user-cog"></i>
+            Profile Settings
+        </h1>
+        <p class="page-subtitle">Manage your account settings and preferences</p>
+    </div>
+</div>
+
+<!-- Profile Settings -->
+<div class="row">
+    <!-- Profile Information -->
+    <div class="col-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-user"></i>
+                    Profile Information
+                </h3>
+            </div>
+            <div class="card-body">
+                <form id="profileForm">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" class="form-control" value="<%= user.username %>" disabled>
+                        <small class="form-text">Username cannot be changed</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="display_name">Display Name</label>
+                        <input type="text" id="display_name" name="display_name" class="form-control" 
+                               value="<%= user.display_name || user.username %>" 
+                               placeholder="Enter your display name">
+                        <small class="form-text">This name will be shown in the interface</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" class="form-control" 
+                               value="<%= user.email %>" required>
+                        <small class="form-text">Used for notifications and account recovery</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="role">Role</label>
+                        <input type="text" id="role" class="form-control" value="<%= user.role %>" disabled>
+                        <small class="form-text">Your account role and permissions</small>
+                    </div>
+
+                    <hr>
+
+                    <h4 style="margin-bottom: 20px;">
+                        <i class="fas fa-lock"></i>
+                        Change Password
+                    </h4>
+
+                    <div class="form-group">
+                        <label for="current_password">Current Password</label>
+                        <input type="password" id="current_password" name="current_password" class="form-control">
+                        <small class="form-text">Required to change password</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new_password">New Password</label>
+                        <input type="password" id="new_password" name="new_password" class="form-control">
+                        <small class="form-text">Leave blank to keep current password</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirm_password">Confirm New Password</label>
+                        <input type="password" id="confirm_password" class="form-control">
+                        <small class="form-text">Must match new password</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Save Changes
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                            <i class="fas fa-undo"></i>
+                            Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Theme & Appearance -->
+    <div class="col-4">
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-palette"></i>
+                    Theme & Appearance
+                </h3>
+            </div>
+            <div class="card-body">
+                <form id="themeForm">
+                    <div class="form-group">
+                        <label for="theme_preference">Theme Mode</label>
+                        <select id="theme_preference" name="theme_preference" class="form-control">
+                            <option value="dark" <%= user.theme_preference === 'dark' ? 'selected' : '' %>>Dark Mode</option>
+                            <option value="light" <%= user.theme_preference === 'light' ? 'selected' : '' %>>Light Mode</option>
+                            <option value="auto" <%= user.theme_preference === 'auto' ? 'selected' : '' %>>Auto (System)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="theme_primary_color">Primary Color</label>
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="theme_primary_color" name="theme_primary_color" 
+                                   class="form-control color-picker" 
+                                   value="<%= user.theme_primary_color || '#2d6a4f' %>">
+                            <div class="color-preview" id="primaryColorPreview"></div>
+                        </div>
+                        <small class="form-text">Main accent color for buttons and highlights</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="theme_accent_color">Accent Color</label>
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="theme_accent_color" name="theme_accent_color" 
+                                   class="form-control color-picker" 
+                                   value="<%= user.theme_accent_color || '#40916c' %>">
+                            <div class="color-preview" id="accentColorPreview"></div>
+                        </div>
+                        <small class="form-text">Secondary color for hover effects</small>
+                    </div>
+
+                    <div class="theme-presets">
+                        <label>Quick Presets</label>
+                        <div class="preset-colors">
+                            <div class="preset-item" data-primary="#2d6a4f" data-accent="#40916c" title="Forest Green">
+                                <div class="preset-primary" style="background: #2d6a4f;"></div>
+                                <div class="preset-accent" style="background: #40916c;"></div>
+                            </div>
+                            <div class="preset-item" data-primary="#1e40af" data-accent="#3b82f6" title="Ocean Blue">
+                                <div class="preset-primary" style="background: #1e40af;"></div>
+                                <div class="preset-accent" style="background: #3b82f6;"></div>
+                            </div>
+                            <div class="preset-item" data-primary="#7c2d12" data-accent="#ea580c" title="Sunset Orange">
+                                <div class="preset-primary" style="background: #7c2d12;"></div>
+                                <div class="preset-accent" style="background: #ea580c;"></div>
+                            </div>
+                            <div class="preset-item" data-primary="#7c3aed" data-accent="#a855f7" title="Royal Purple">
+                                <div class="preset-primary" style="background: #7c3aed;"></div>
+                                <div class="preset-accent" style="background: #a855f7;"></div>
+                            </div>
+                            <div class="preset-item" data-primary="#dc2626" data-accent="#ef4444" title="Ruby Red">
+                                <div class="preset-primary" style="background: #dc2626;"></div>
+                                <div class="preset-accent" style="background: #ef4444;"></div>
+                            </div>
+                            <div class="preset-item" data-primary="#059669" data-accent="#10b981" title="Emerald Green">
+                                <div class="preset-primary" style="background: #059669;"></div>
+                                <div class="preset-accent" style="background: #10b981;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="applyTheme()">
+                            <i class="fas fa-eye"></i>
+                            Preview
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="resetTheme()">
+                            <i class="fas fa-undo"></i>
+                            Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Profile Picture -->
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-camera"></i>
+                    Profile Picture
+                </h3>
+            </div>
+            <div class="card-body text-center">
+                <div class="profile-picture-wrapper">
+                    <div class="profile-picture">
+                        <% if (user.profile_picture) { %>
+                            <img src="<%= user.profile_picture %>" alt="Profile Picture" id="profilePicture">
+                        <% } else { %>
+                            <div class="profile-placeholder" id="profilePicture">
+                                <i class="fas fa-user"></i>
+                            </div>
+                        <% } %>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="uploadProfilePicture()">
+                        <i class="fas fa-upload"></i>
+                        Upload Picture
+                    </button>
+                </div>
+                <small class="form-text">Recommended: 200x200px, max 2MB</small>
+            </div>
+        </div>
+
+        <!-- Account Info -->
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-info-circle"></i>
+                    Account Information
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="info-item">
+                    <span class="info-label">Member Since</span>
+                    <span class="info-value"><%= new Date(user.created_at).toLocaleDateString() %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Last Updated</span>
+                    <span class="info-value"><%= user.updated_at ? new Date(user.updated_at).toLocaleDateString() : 'Never' %></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Account Status</span>
+                    <span class="info-value">
+                        <span class="badge badge-<%= user.status === 'active' ? 'success' : 'danger' %>">
+                            <%= user.status %>
+                        </span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Profile specific styles */
+.color-picker-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.color-picker {
+    width: 60px;
+    height: 40px;
+    padding: 0;
+    border: 2px solid var(--border-primary);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.color-preview {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 2px solid var(--border-primary);
+    flex-shrink: 0;
+}
+
+.theme-presets {
+    margin-top: 20px;
+}
+
+.preset-colors {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.preset-item {
+    display: flex;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid var(--border-primary);
+    transition: all var(--transition-fast);
+}
+
+.preset-item:hover {
+    border-color: var(--accent-primary);
+    transform: scale(1.05);
+}
+
+.preset-primary,
+.preset-accent {
+    height: 30px;
+    flex: 1;
+}
+
+.profile-picture-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.profile-picture {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid var(--border-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-picture img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-placeholder {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    color: var(--text-muted);
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.info-value {
+    color: var(--text-primary);
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-primary);
+}
+</style>
+
+<script>
+// Profile form handling
+document.getElementById('profileForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // Validate password confirmation
+    if (data.new_password && data.new_password !== document.getElementById('confirm_password').value) {
+        showToast('New passwords do not match', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/profile/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Profile updated successfully!', 'success');
+            // Clear password fields
+            document.getElementById('current_password').value = '';
+            document.getElementById('new_password').value = '';
+            document.getElementById('confirm_password').value = '';
+        } else {
+            showToast(result.error || 'Failed to update profile', 'error');
+        }
+    } catch (error) {
+        console.error('Profile update error:', error);
+        showToast('An error occurred while updating profile', 'error');
+    }
+});
+
+// Theme handling
+function updateColorPreviews() {
+    const primaryColor = document.getElementById('theme_primary_color').value;
+    const accentColor = document.getElementById('theme_accent_color').value;
+    
+    document.getElementById('primaryColorPreview').style.backgroundColor = primaryColor;
+    document.getElementById('accentColorPreview').style.backgroundColor = accentColor;
+}
+
+function applyTheme() {
+    const primaryColor = document.getElementById('theme_primary_color').value;
+    const accentColor = document.getElementById('theme_accent_color').value;
+    const themeMode = document.getElementById('theme_preference').value;
+    
+    // Apply theme mode (light/dark/auto)
+    const html = document.documentElement;
+    if (themeMode === 'light') {
+        html.setAttribute('data-theme', 'light');
+    } else if (themeMode === 'dark') {
+        html.setAttribute('data-theme', 'dark');
+    } else if (themeMode === 'auto') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    }
+    
+    // Apply theme temporarily for preview
+    document.documentElement.style.setProperty('--accent-primary', primaryColor);
+    document.documentElement.style.setProperty('--accent-secondary', accentColor);
+    
+    showToast('Theme preview applied! Save your profile to make it permanent.', 'info');
+}
+
+function resetTheme() {
+    document.getElementById('theme_primary_color').value = '<%= user.theme_primary_color || "#2d6a4f" %>';
+    document.getElementById('theme_accent_color').value = '<%= user.theme_accent_color || "#40916c" %>';
+    document.getElementById('theme_preference').value = '<%= user.theme_preference || "dark" %>';
+    updateColorPreviews();
+}
+
+function resetForm() {
+    document.getElementById('profileForm').reset();
+    document.getElementById('display_name').value = '<%= user.display_name || user.username %>';
+    document.getElementById('email').value = '<%= user.email %>';
+}
+
+// Preset color handling
+document.querySelectorAll('.preset-item').forEach(item => {
+    item.addEventListener('click', function() {
+        const primary = this.dataset.primary;
+        const accent = this.dataset.accent;
+        
+        document.getElementById('theme_primary_color').value = primary;
+        document.getElementById('theme_accent_color').value = accent;
+        updateColorPreviews();
+    });
+});
+
+// Color picker change handlers
+document.getElementById('theme_primary_color').addEventListener('change', updateColorPreviews);
+document.getElementById('theme_accent_color').addEventListener('change', updateColorPreviews);
+
+// Theme preference change handler
+document.getElementById('theme_preference').addEventListener('change', function() {
+    applyTheme();
+});
+
+// Profile picture upload
+function uploadProfilePicture() {
+    showToast('Profile picture upload feature coming soon!', 'info');
+}
+
+// Initialize
+updateColorPreviews();
+
+// Toast notification function
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type}`;
+    const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle';
+    toast.innerHTML = `
+        <i class="fas fa-${icon}"></i>
+        <span>${message}</span>
+        <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+    `;
+    
+    const container = document.querySelector('.page-container');
+    container.insertBefore(toast, container.firstChild);
+    
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-10px)';
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, 5000);
+}
+</script>
+
+<%- include('partials/footer') %>

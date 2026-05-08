@@ -1,0 +1,418 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-edit"></i>
+            Edit Server
+        </h1>
+        <p class="page-subtitle">Update server configuration and settings</p>
+    </div>
+    <a href="/admin/servers" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to Servers
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-8">
+        <div class="card">
+            <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 16px;">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <%= editServer.name %>
+                </h3>
+                <span class="badge <%= editServer.status === 'running' ? 'badge-success' : 'badge-danger' %>">
+                    <i class="fas fa-circle" style="font-size: 8px;"></i>
+                    <%= editServer.status %>
+                </span>
+            </div>
+            <div class="card-body">
+                <form id="editServerForm" method="post" action="/admin/servers/<%= editServer.id %>/update">
+                    <input type="hidden" name="serverId" value="<%= editServer.id %>">
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-tag"></i>
+                            Server Name *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="text" name="name" class="form-control" value="<%= editServer.name %>" required minlength="3" maxlength="64">
+                            <i class="fas fa-tag input-icon"></i>
+                        </div>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            A friendly name for your server (3-64 characters)
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-user"></i>
+                            Server Owner *
+                        </label>
+                        <select name="owner_id" class="form-control" required>
+                            <% users.forEach(u => { %>
+                                <option value="<%= u.id %>" <%= editServer.owner_id === u.id ? 'selected' : '' %>>
+                                    <%= u.username %> (<%= u.email %>)
+                                </option>
+                            <% }) %>
+                        </select>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            The user who will own and manage this server
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-cube"></i>
+                            Server Type *
+                        </label>
+                        <select name="server_type" class="form-control" required disabled>
+                            <option value="<%= editServer.server_type %>"><%= editServer.server_type %></option>
+                        </select>
+                        <span class="form-help" style="color: var(--warning);">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Server type cannot be changed after creation
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-code-branch"></i>
+                            Minecraft Version *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="text" name="version" class="form-control" value="<%= editServer.version %>" required>
+                            <i class="fas fa-code-branch input-icon"></i>
+                        </div>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Current version (change with caution - may require server reinstall)
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-network-wired"></i>
+                            Server Port *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" name="port" class="form-control" value="<%= editServer.port %>" required min="1024" max="65535">
+                            <i class="fas fa-network-wired input-icon"></i>
+                        </div>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Port number for the server (1024-65535)
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-memory"></i>
+                            RAM Allocation (MB) *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" name="ram" class="form-control" value="<%= editServer.ram %>" required min="512">
+                            <i class="fas fa-memory input-icon"></i>
+                        </div>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Memory allocated to the server (minimum: 512 MB)
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-microchip"></i>
+                            CPU Cores *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" name="cpu" class="form-control" value="<%= editServer.cpu || 2 %>" required min="1">
+                            <i class="fas fa-microchip input-icon"></i>
+                        </div>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Number of CPU cores (minimum: 1)
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-hdd"></i>
+                            Disk Space (MB) *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" name="disk" class="form-control" value="<%= editServer.disk || 10240 %>" required min="1024">
+                            <i class="fas fa-hdd input-icon"></i>
+                        </div>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Disk space allocated (minimum: 1024 MB / 1 GB)
+                        </span>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 24px; border-top: 1px solid var(--border-primary);">
+                        <a href="/admin/servers" class="btn btn-secondary">
+                            <i class="fas fa-times"></i>
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-save"></i>
+                            Update Server
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-4">
+        <!-- Server Info Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-info-circle" style="color: var(--info);"></i>
+                    Server Details
+                </h3>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Server ID</div>
+                        <div style="font-weight: 600; color: var(--text-primary); font-family: monospace;">#<%= editServer.id %></div>
+                    </div>
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Server Type</div>
+                        <span class="badge badge-info"><%= editServer.server_type %></span>
+                    </div>
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Created</div>
+                        <div style="font-weight: 500; color: var(--text-primary);">
+                            <i class="fas fa-calendar"></i>
+                            <%= new Date(editServer.created_at).toLocaleDateString() %>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Current Status</div>
+                        <span class="badge <%= editServer.status === 'running' ? 'badge-success' : 'badge-danger' %>">
+                            <i class="fas fa-circle" style="font-size: 8px;"></i>
+                            <%= editServer.status %>
+                        </span>
+                    </div>
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Owner</div>
+                        <div style="font-weight: 500; color: var(--text-primary);">
+                            <i class="fas fa-user"></i>
+                            <%= editServer.owner_name || 'Unknown' %>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Resources</div>
+                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-memory" style="color: var(--warning); width: 16px;"></i>
+                                <span style="color: var(--text-secondary);">RAM:</span>
+                                <span style="font-weight: 600; color: var(--text-primary);"><%= editServer.ram %> MB</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-microchip" style="color: var(--info); width: 16px;"></i>
+                                <span style="color: var(--text-secondary);">CPU:</span>
+                                <span style="font-weight: 600; color: var(--text-primary);"><%= editServer.cpu || 2 %> Cores</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-hdd" style="color: var(--success); width: 16px;"></i>
+                                <span style="color: var(--text-secondary);">Disk:</span>
+                                <span style="font-weight: 600; color: var(--text-primary);"><%= (editServer.disk || 10240) / 1024 %> GB</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-bolt" style="color: var(--warning);"></i>
+                    Quick Actions
+                </h3>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <a href="/servers/<%= editServer.id %>/dashboard" class="btn btn-secondary w-full">
+                        <i class="fas fa-tachometer-alt"></i>
+                        View Dashboard
+                    </a>
+                    <a href="/servers/<%= editServer.id %>/console" class="btn btn-secondary w-full">
+                        <i class="fas fa-terminal"></i>
+                        Open Console
+                    </a>
+                    <a href="/servers/<%= editServer.id %>/filemanager" class="btn btn-secondary w-full">
+                        <i class="fas fa-folder"></i>
+                        File Manager
+                    </a>
+                    <% if (editServer.status === 'running') { %>
+                        <button class="btn btn-danger w-full" onclick="toggleServer('stop')">
+                            <i class="fas fa-stop"></i>
+                            Stop Server
+                        </button>
+                    <% } else { %>
+                        <button class="btn btn-success w-full" onclick="toggleServer('start')">
+                            <i class="fas fa-play"></i>
+                            Start Server
+                        </button>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="card" style="border-color: var(--danger);">
+            <div class="card-header" style="background: rgba(239, 68, 68, 0.1); border-bottom-color: var(--danger);">
+                <h3 style="display: flex; align-items: center; gap: 10px; color: var(--danger);">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Danger Zone
+                </h3>
+            </div>
+            <div class="card-body">
+                <div style="margin-bottom: 16px;">
+                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Delete Server</div>
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+                        Permanently delete this server and all associated data. This action cannot be undone.
+                    </div>
+                    <button class="btn btn-danger w-full" onclick="deleteServer()">
+                        <i class="fas fa-trash"></i>
+                        Delete Server
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-question-circle" style="color: var(--info);"></i>
+                    Help
+                </h3>
+            </div>
+            <div class="card-body">
+                <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                    <p style="margin-bottom: 12px;">
+                        <strong>Changing Port:</strong> Make sure the new port is not already in use by another server.
+                    </p>
+                    <p style="margin-bottom: 12px;">
+                        <strong>Resource Limits:</strong> RAM, CPU, and Disk changes take effect after server restart. The server cannot exceed these limits.
+                    </p>
+                    <p style="margin-bottom: 0;">
+                        <strong>Version Change:</strong> Changing version may require server reinstall or cause compatibility issues.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+
+<script>
+// Form submit handler
+document.getElementById('editServerForm').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+    // Form will submit naturally to /admin/servers/:id/update
+});
+
+function toggleServer(action) {
+    if (!confirm(`Are you sure you want to ${action} this server?`)) {
+        return;
+    }
+
+    fetch(`/servers/<%= editServer.id %>/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`Server ${action}ed successfully!`, 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast('Error: ' + (data.error || `Failed to ${action} server`), 'error');
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showToast('An error occurred', 'error');
+    });
+}
+
+function deleteServer() {
+    const serverName = '<%= editServer.name %>';
+    
+    if (!confirm(`Are you sure you want to delete server "${serverName}"?\n\nThis will:\n• Delete all server files\n• Remove all backups\n• This action cannot be undone`)) {
+        return;
+    }
+
+    const secondConfirm = prompt(`Type "${serverName}" to confirm deletion:`);
+    if (secondConfirm !== serverName) {
+        showToast('Deletion cancelled - server name did not match', 'error');
+        return;
+    }
+
+    fetch(`/servers/<%= editServer.id %>/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Server deleted successfully', 'success');
+            setTimeout(() => {
+                window.location.href = '/admin/servers';
+            }, 1500);
+        } else {
+            showToast('Error: ' + (data.error || 'Failed to delete server'), 'error');
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showToast('An error occurred', 'error');
+    });
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type}`;
+    toast.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; animation: slideInRight 0.3s ease; min-width: 300px;';
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
+</script>

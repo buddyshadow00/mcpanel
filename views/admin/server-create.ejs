@@ -1,0 +1,275 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-server"></i>
+            Create New Server
+        </h1>
+        <p class="page-subtitle">Add a new Minecraft server to the panel</p>
+    </div>
+    <a href="/admin/servers" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to Servers
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-cog" style="color: var(--accent-primary);"></i>
+                    Server Configuration
+                </h3>
+            </div>
+            <div class="card-body">
+                <form id="createServerForm" method="post" action="/admin/servers/create">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-tag"></i>
+                            Server Name *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="text" name="name" class="form-control" placeholder="My Minecraft Server" required minlength="3" maxlength="64">
+                            <i class="fas fa-tag input-icon"></i>
+                        </div>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            A friendly name for your server (3-64 characters)
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-user"></i>
+                            Server Owner *
+                        </label>
+                        <select name="owner_id" class="form-control" required>
+                            <option value="">Select owner...</option>
+                            <% users.forEach(u => { %>
+                                <option value="<%= u.id %>"><%= u.username %> (<%= u.email %>)</option>
+                            <% }) %>
+                        </select>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            The user who will own and manage this server
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-cube"></i>
+                            Server Type *
+                        </label>
+                        <select name="server_type" id="serverType" class="form-control" required>
+                            <option value="">Select server type...</option>
+                            <option value="vanilla">Vanilla - Official Minecraft server</option>
+                            <option value="paper">Paper - High performance fork</option>
+                            <option value="purpur">Purpur - Feature-rich Paper fork</option>
+                            <option value="spigot">Spigot - Plugin support</option>
+                            <option value="fabric">Fabric - Modding platform</option>
+                            <option value="forge">Forge - Modding platform</option>
+                            <option value="velocity">Velocity - Modern proxy</option>
+                            <option value="bungeecord">BungeeCord - Classic proxy</option>
+                            <option value="waterfall">Waterfall - BungeeCord fork</option>
+                            <option value="bedrock">Bedrock - Bedrock Edition</option>
+                        </select>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Choose the server software type
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-code-branch"></i>
+                            Minecraft Version *
+                        </label>
+                        <select name="version" id="versionSelect" class="form-control" required disabled>
+                            <option value="">Select server type first...</option>
+                        </select>
+                        <span class="form-help" id="versionHelp">
+                            <i class="fas fa-info-circle"></i>
+                            Select a server type to load available versions
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-network-wired"></i>
+                            Server Port *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" name="port" class="form-control" placeholder="25565" required min="1024" max="65535" value="25565">
+                            <i class="fas fa-network-wired input-icon"></i>
+                        </div>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Port number for the server (1024-65535, default: 25565)
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-memory"></i>
+                            RAM Allocation (MB) *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" name="ram" class="form-control" placeholder="1024" required min="512" value="1024">
+                            <i class="fas fa-memory input-icon"></i>
+                        </div>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Memory allocated to the server (minimum: 512 MB, recommended: 1024+ MB)
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-microchip"></i>
+                            CPU Cores *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" name="cpu" class="form-control" placeholder="2" required min="1" value="2">
+                            <i class="fas fa-microchip input-icon"></i>
+                        </div>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Number of CPU cores (minimum: 1, recommended: 2+)
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-hdd"></i>
+                            Disk Space (MB) *
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="number" name="disk" class="form-control" placeholder="10240" required min="1024" value="10240">
+                            <i class="fas fa-hdd input-icon"></i>
+                        </div>
+                        <span class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Disk space allocated (minimum: 1024 MB / 1 GB, recommended: 10240+ MB / 10+ GB)
+                        </span>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-primary);">
+                        <a href="/admin/servers" class="btn btn-secondary">
+                            <i class="fas fa-times"></i>
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-plus"></i>
+                            Create Server
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-4">
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-question-circle"></i> Help</h3>
+            </div>
+            <div class="card-body">
+                <p><strong>Server Types:</strong> Vanilla, Paper, Purpur (plugins), Fabric/Forge (mods), Velocity/BungeeCord (proxy)</p>
+                <p><strong>Port:</strong> Default is 25565</p>
+                <p><strong>RAM:</strong> Minimum 512 MB, recommended 1024+ MB</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+
+<script>
+(function() {
+    'use strict';
+    
+    console.log('✅ Script loaded');
+    
+    // Wait for DOM
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+    
+    function init() {
+        console.log('✅ Initializing...');
+        
+        const serverTypeSelect = document.getElementById('serverType');
+        const versionSelect = document.getElementById('versionSelect');
+        const versionHelp = document.getElementById('versionHelp');
+        const form = document.getElementById('createServerForm');
+        
+        if (!serverTypeSelect || !versionSelect || !versionHelp) {
+            console.error('❌ Elements not found');
+            return;
+        }
+        
+        console.log('✅ Elements found');
+        
+        // Attach change event
+        serverTypeSelect.addEventListener('change', async function() {
+            const serverType = this.value;
+            console.log('🔄 Server type changed:', serverType);
+            
+            if (!serverType) {
+                versionSelect.disabled = true;
+                versionSelect.innerHTML = '<option value="">Select server type first...</option>';
+                versionHelp.innerHTML = '<i class="fas fa-info-circle"></i> Select a server type';
+                return;
+            }
+            
+            // Loading state
+            versionSelect.disabled = true;
+            versionSelect.innerHTML = '<option value="">Loading...</option>';
+            versionHelp.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading versions...';
+            
+            try {
+                console.log('📡 Fetching versions...');
+                const response = await fetch('/api/versions/' + serverType + '?limit=30');
+                const data = await response.json();
+                
+                console.log('📦 Response:', data);
+                
+                if (data.success && data.versions && data.versions.length > 0) {
+                    versionSelect.innerHTML = '<option value="">Select version...</option>';
+                    data.versions.forEach(function(v) {
+                        const opt = document.createElement('option');
+                        opt.value = v;
+                        opt.textContent = v;
+                        versionSelect.appendChild(opt);
+                    });
+                    versionSelect.disabled = false;
+                    versionHelp.innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i> ' + data.versions.length + ' versions available';
+                    console.log('✅ Loaded ' + data.versions.length + ' versions');
+                } else {
+                    versionSelect.innerHTML = '<option value="">No versions</option>';
+                    versionHelp.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i> No versions found';
+                    console.warn('⚠️ No versions');
+                }
+            } catch (error) {
+                console.error('❌ Error:', error);
+                versionSelect.innerHTML = '<option value="">Error</option>';
+                versionHelp.innerHTML = '<i class="fas fa-times-circle" style="color: #ef4444;"></i> Failed to load';
+            }
+        });
+        
+        // Form submit
+        form.addEventListener('submit', function(e) {
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            // Form will submit naturally to /admin/servers/create
+        });
+        
+        console.log('✅ Initialization complete');
+    }
+})();
+</script>

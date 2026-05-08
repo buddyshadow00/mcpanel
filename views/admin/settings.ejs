@@ -1,0 +1,446 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-sliders-h"></i>
+            Panel Settings
+        </h1>
+        <p class="page-subtitle">Configure panel settings and appearance</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-6">
+        <!-- General Settings -->
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-cog"></i>
+                    General Settings
+                </h3>
+            </div>
+            <div class="card-body">
+                <form id="generalForm" onsubmit="updateGeneral(event)">
+                    <div class="form-group">
+                        <label class="form-label">Panel Name</label>
+                        <input type="text" name="panelName" class="form-control" value="<%= settings.panelName %>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Panel Description</label>
+                        <textarea name="panelDescription" class="form-control" rows="3"><%= settings.panelDescription %></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Footer Text</label>
+                        <input type="text" name="footerText" class="form-control" value="<%= settings.footerText %>">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Registration</label>
+                        <select name="registrationEnabled" class="form-control">
+                            <option value="true" <%= settings.registrationEnabled ? 'selected' : '' %>>Enabled</option>
+                            <option value="false" <%= !settings.registrationEnabled ? 'selected' : '' %>>Disabled</option>
+                        </select>
+                        <small style="color: var(--text-muted); font-size: 12px;">Allow new users to register</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Max Servers Per User</label>
+                        <input type="number" name="maxServersPerUser" class="form-control" value="<%= settings.maxServersPerUser %>" min="1" max="100">
+                        <small style="color: var(--text-muted); font-size: 12px;">Maximum number of servers each user can create</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Save General Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Video Background Settings -->
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-video"></i>
+                    Video Background
+                </h3>
+            </div>
+            <div class="card-body">
+                <form id="videoForm" onsubmit="updateVideoBackground(event)">
+                    <div class="form-group">
+                        <label class="form-label">Video Background URL</label>
+                        <div class="input-wrapper">
+                            <input type="url" name="videoBackgroundUrl" id="videoUrlInput" class="form-control" 
+                                   value="<%= settings.videoBackgroundUrl || '' %>" 
+                                   placeholder="https://example.com/video.mp4">
+                            <i class="fas fa-link input-icon"></i>
+                        </div>
+                        <small style="color: var(--text-muted); font-size: 12px; display: block; margin-top: 6px;">
+                            <i class="fas fa-info-circle"></i> Enter a direct URL to an MP4 video file. Leave empty to disable video background.
+                        </small>
+                        <small style="color: var(--text-muted); font-size: 12px; display: block; margin-top: 4px;">
+                            <i class="fas fa-lightbulb"></i> Tip: Use a looping video for best results. Recommended resolution: 1920x1080
+                        </small>
+                    </div>
+
+                    <% if (settings.videoBackgroundUrl) { %>
+                    <div style="margin-bottom: 16px;">
+                        <div style="padding: 12px; background: var(--success-glow); border-radius: 8px; border: 1px solid var(--success);">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="color: var(--success);"></i>
+                                <span style="font-weight: 600; color: var(--success);">Video Background Active</span>
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-secondary); word-break: break-all;">
+                                <%= settings.videoBackgroundUrl %>
+                            </div>
+                        </div>
+                    </div>
+                    <% } %>
+
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Save Video Settings
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="previewVideo()">
+                            <i class="fas fa-eye"></i>
+                            Preview Video
+                        </button>
+                        <% if (settings.videoBackgroundUrl) { %>
+                        <button type="button" class="btn btn-danger" onclick="removeVideoBackground()">
+                            <i class="fas fa-times"></i>
+                            Remove Video
+                        </button>
+                        <% } %>
+                    </div>
+                </form>
+
+                <!-- Video Preview Modal -->
+                <div id="videoPreviewModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.9); z-index: 9999; align-items: center; justify-content: center;">
+                    <div style="position: relative; max-width: 90%; max-height: 90%; background: var(--bg-card); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-xl);">
+                        <div style="padding: 20px; border-bottom: 1px solid var(--border-primary); display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0; color: var(--text-primary);">
+                                <i class="fas fa-video"></i> Video Preview
+                            </h3>
+                            <button onclick="closePreview()" style="background: transparent; border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div style="padding: 20px;">
+                            <video id="previewVideo" controls style="width: 100%; max-width: 800px; border-radius: 8px;">
+                                <source src="" type="video/mp4">
+                            </video>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Icon Settings -->
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-image"></i>
+                    Panel Icons
+                </h3>
+            </div>
+            <div class="card-body">
+                <form id="iconForm" onsubmit="updateIcons(event)" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label class="form-label">Site Icon (Favicon)</label>
+                        <input type="file" name="siteIcon" class="form-control" accept="image/*">
+                        <small style="color: var(--text-muted); font-size: 12px;">Current: <%= settings.siteIcon || '/site-icon.jpg' %></small>
+                        <% if (settings.siteIcon) { %>
+                            <div style="margin-top: 12px;">
+                                <img src="<%= settings.siteIcon %>" alt="Site Icon" style="width: 64px; height: 64px; object-fit: contain; border-radius: 8px; background: var(--bg-tertiary); padding: 8px;">
+                            </div>
+                        <% } %>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Header Icon (Logo)</label>
+                        <input type="file" name="headerIcon" class="form-control" accept="image/*">
+                        <small style="color: var(--text-muted); font-size: 12px;">Current: <%= settings.headerIcon || '/header-icon.jpg' %></small>
+                        <% if (settings.headerIcon) { %>
+                            <div style="margin-top: 12px;">
+                                <img src="<%= settings.headerIcon %>" alt="Header Icon" style="width: 64px; height: 64px; object-fit: contain; border-radius: 8px; background: var(--bg-tertiary); padding: 8px;">
+                            </div>
+                        <% } %>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload"></i>
+                        Upload Icons
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6">
+        <!-- System Information -->
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-info-circle"></i>
+                    System Information
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="system-info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Database Path</span>
+                        <span class="info-value" style="font-size: 12px; word-break: break-all;"><%= DB_PATH %></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Servers Directory</span>
+                        <span class="info-value" style="font-size: 12px; word-break: break-all;"><%= SERVERS_DIR %></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Node Version</span>
+                        <span class="info-value"><%= process.version %></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Platform</span>
+                        <span class="info-value"><%= process.platform %></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-chart-bar"></i>
+                    Current Settings
+                </h3>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+                        <span style="color: var(--text-secondary);">Registration Status</span>
+                        <span class="badge <%= settings.registrationEnabled ? 'badge-success' : 'badge-danger' %>">
+                            <%= settings.registrationEnabled ? 'Enabled' : 'Disabled' %>
+                        </span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+                        <span style="color: var(--text-secondary);">Max Servers/User</span>
+                        <span style="font-weight: 600;"><%= settings.maxServersPerUser %></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+                        <span style="color: var(--text-secondary);">Panel Name</span>
+                        <span style="font-weight: 600;"><%= settings.panelName %></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+                        <span style="color: var(--text-secondary);">Video Background</span>
+                        <span class="badge <%= settings.videoBackgroundUrl ? 'badge-success' : 'badge-danger' %>">
+                            <i class="fas fa-<%= settings.videoBackgroundUrl ? 'check' : 'times' %>"></i>
+                            <%= settings.videoBackgroundUrl ? 'Active' : 'Disabled' %>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="card" style="border-color: var(--danger);">
+            <div class="card-header" style="background: rgba(230, 57, 70, 0.1); border-color: var(--danger);">
+                <h3 style="color: var(--danger);">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Danger Zone
+                </h3>
+            </div>
+            <div class="card-body">
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                    These actions are irreversible. Please be careful.
+                </p>
+                <button class="btn btn-danger" onclick="clearCache()">
+                    <i class="fas fa-trash"></i>
+                    Clear Cache
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+
+<script>
+async function updateGeneral(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    try {
+        const response = await fetch('/admin/settings/general', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('General settings updated successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + (result.error || 'Failed to update settings'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred');
+    }
+}
+
+async function updateVideoBackground(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Validate URL if provided
+    if (data.videoBackgroundUrl && !data.videoBackgroundUrl.match(/^https?:\/\/.+\.(mp4|webm|ogg)$/i)) {
+        alert('Please enter a valid video URL (must be .mp4, .webm, or .ogg)');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/admin/settings/video-background', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Video background settings updated successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + (result.error || 'Failed to update video background'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred');
+    }
+}
+
+async function removeVideoBackground() {
+    if (!confirm('Are you sure you want to remove the video background?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/admin/settings/video-background', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ videoBackgroundUrl: '' })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Video background removed successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + (result.error || 'Failed to remove video background'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred');
+    }
+}
+
+function previewVideo() {
+    const urlInput = document.getElementById('videoUrlInput');
+    const videoUrl = urlInput.value.trim();
+    
+    if (!videoUrl) {
+        alert('Please enter a video URL first');
+        return;
+    }
+    
+    // Validate URL format
+    if (!videoUrl.match(/^https?:\/\/.+\.(mp4|webm|ogg)$/i)) {
+        alert('Please enter a valid video URL (must be .mp4, .webm, or .ogg)');
+        return;
+    }
+    
+    const modal = document.getElementById('videoPreviewModal');
+    const video = document.getElementById('previewVideo');
+    
+    video.src = videoUrl;
+    modal.style.display = 'flex';
+    video.play();
+}
+
+function closePreview() {
+    const modal = document.getElementById('videoPreviewModal');
+    const video = document.getElementById('previewVideo');
+    
+    video.pause();
+    video.src = '';
+    modal.style.display = 'none';
+}
+
+// Close preview on ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closePreview();
+    }
+});
+
+// Close preview when clicking outside
+document.getElementById('videoPreviewModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePreview();
+    }
+});
+
+async function updateIcons(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    
+    // Check if any files were selected
+    if (!formData.get('siteIcon').size && !formData.get('headerIcon').size) {
+        alert('Please select at least one icon to upload');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/admin/settings/icons', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Icons updated successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + (result.error || 'Failed to update icons'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred');
+    }
+}
+
+function clearCache() {
+    if (!confirm('Are you sure you want to clear the cache? This may temporarily slow down the panel.')) {
+        return;
+    }
+    
+    alert('Cache clearing is not yet implemented. This feature will be added in a future update.');
+}
+</script>

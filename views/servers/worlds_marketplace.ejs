@@ -1,0 +1,530 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-globe"></i>
+            World Marketplace
+        </h1>
+        <p class="page-subtitle"><%= server.name %> - Powered by CurseForge</p>
+    </div>
+    <div class="page-actions">
+        <a href="/servers/<%= server.id %>/worlds" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Back to Worlds
+        </a>
+    </div>
+</div>
+
+<!-- Important Notice -->
+<div class="card" style="margin-bottom: 20px; border-left: 4px solid #2563eb;">
+    <div class="card-body" style="padding: 16px;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <i class="fas fa-info-circle" style="color: #2563eb; font-size: 20px; margin-top: 2px;"></i>
+            <div>
+                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">📥 How World Downloads Work</div>
+                <div style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
+                    <strong>⚡ Automatic Download:</strong> Click "Download" button. The system will attempt automatic download.<br>
+                    <strong>🔒 CurseForge Policy:</strong> Most worlds require manual download due to CurseForge's download tracking policy.<br>
+                    <strong>📋 Manual Process (2 minutes):</strong><br>
+                    &nbsp;&nbsp;1. Click "View on CurseForge" button<br>
+                    &nbsp;&nbsp;2. Download the .zip file from CurseForge<br>
+                    &nbsp;&nbsp;3. Go to <a href="/servers/<%= server.id %>/worlds" style="color: #2563eb; text-decoration: underline;">World Management</a><br>
+                    &nbsp;&nbsp;4. Use File Manager to upload the .zip to server root directory<br>
+                    &nbsp;&nbsp;5. Extract the .zip file to create the world folder<br><br>
+                    <em style="color: var(--text-muted);">💡 Tip: Downloaded .zip files are saved to your server root directory (servers/<%= server.id %>/) for easy access.</em>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search -->
+<div class="card">
+    <div class="card-body">
+        <form id="searchForm" style="display: flex; gap: 12px;">
+            <input type="text" id="searchInput" name="q" class="form-control" placeholder="Search CurseForge worlds (e.g., Skyblock, Adventure, Parkour)..." value="" style="flex: 1;">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Worlds Grid -->
+<div id="worldsContainer">
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-bottom: 32px;" id="worldsGrid">
+        <!-- Worlds will be loaded here -->
+    </div>
+</div>
+
+<!-- Pagination -->
+<div id="pagination" style="display: flex; justify-content: center; gap: 8px; margin-top: 24px;">
+    <!-- Pagination buttons will be added here -->
+</div>
+
+<!-- Loading State -->
+<div id="loadingState" style="text-align: center; padding: 60px;">
+    <i class="fas fa-spinner fa-spin" style="font-size: 48px; color: var(--primary); margin-bottom: 16px;"></i>
+    <div style="color: var(--text-secondary);">Loading worlds from CurseForge...</div>
+</div>
+
+<!-- Empty State -->
+<div id="emptyState" style="text-align: center; padding: 60px; display: none;">
+    <i class="fas fa-globe" style="font-size: 48px; color: var(--text-muted); margin-bottom: 16px;"></i>
+    <div style="color: var(--text-secondary); margin-bottom: 16px;">No worlds found</div>
+    <div style="color: var(--text-muted); font-size: 14px;">Try adjusting your search</div>
+</div>
+
+<!-- Error State -->
+<div id="errorState" style="text-align: center; padding: 60px; display: none;">
+    <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--danger); margin-bottom: 16px;"></i>
+    <div style="color: var(--text-secondary); margin-bottom: 16px;">Failed to load worlds</div>
+    <div style="color: var(--text-muted); font-size: 14px;" id="errorMessage"></div>
+    <button onclick="loadWorlds()" class="btn btn-primary" style="margin-top: 16px;">
+        <i class="fas fa-redo"></i> Retry
+    </button>
+</div>
+
+<style>
+.world-card {
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+}
+
+.world-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.world-image {
+    width: 100%;
+    height: 180px;
+    background: linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.world-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.world-content {
+    padding: 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.world-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.world-description {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: 1;
+}
+
+.world-meta {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.world-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.world-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.download-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.download-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+</style>
+
+<script>
+const serverId = '<%= server.id %>';
+let currentPage = 1;
+let currentSearch = '';
+let totalPages = 1;
+
+function formatNumber(num) {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+function loadWorlds(page = 1) {
+    currentPage = page;
+    
+    const grid = document.getElementById('worldsGrid');
+    const loading = document.getElementById('loadingState');
+    const empty = document.getElementById('emptyState');
+    const error = document.getElementById('errorState');
+    const container = document.getElementById('worldsContainer');
+    const pagination = document.getElementById('pagination');
+    
+    loading.style.display = 'block';
+    container.style.display = 'none';
+    empty.style.display = 'none';
+    error.style.display = 'none';
+    pagination.style.display = 'none';
+    
+    const url = `/servers/${serverId}/worlds/marketplace/api?page=${page}&search=${encodeURIComponent(currentSearch)}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            loading.style.display = 'none';
+            
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to load worlds');
+            }
+            
+            if (data.worlds.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+            
+            container.style.display = 'block';
+            totalPages = Math.ceil(data.total / 20);
+            
+            grid.innerHTML = data.worlds.map(world => `
+                <div class="card world-card">
+                    <div class="world-image">
+                        <img src="${world.image}" alt="${world.name}" onerror="this.style.display='none';">
+                    </div>
+                    <div class="world-content">
+                        <h3 class="world-title">${world.name}</h3>
+                        <p class="world-description">${world.description}</p>
+                        
+                        <div class="world-meta">
+                            <div class="world-meta-item">
+                                <i class="fas fa-user"></i>
+                                <span>${world.author}</span>
+                            </div>
+                            <div class="world-meta-item">
+                                <i class="fas fa-download"></i>
+                                <span>${formatNumber(world.downloads)}</span>
+                            </div>
+                            ${world.fileSize > 0 ? `
+                            <div class="world-meta-item">
+                                <i class="fas fa-hdd"></i>
+                                <span>${formatFileSize(world.fileSize)}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="world-footer">
+                        ${world.downloadUrl || world.fileId ? `
+                        <button onclick="downloadWorld('${world.id}', '${world.fileId}', '${world.name}', '${world.projectUrl}', this)" 
+                           class="btn btn-primary download-btn">
+                            <i class="fas fa-download"></i>
+                            Download ${world.fileName}
+                        </button>
+                        <a href="${world.projectUrl}" 
+                           class="btn btn-secondary download-btn"
+                           target="_blank"
+                           style="margin-top: 8px;">
+                            <i class="fas fa-external-link-alt"></i>
+                            View on CurseForge
+                        </a>
+                        ` : `
+                        <a href="${world.projectUrl}" 
+                           class="btn btn-secondary download-btn"
+                           target="_blank">
+                            <i class="fas fa-external-link-alt"></i>
+                            View on CurseForge
+                        </a>
+                        `}
+                    </div>
+                </div>
+            `).join('');
+            
+            // Render pagination
+            if (totalPages > 1) {
+                pagination.style.display = 'flex';
+                renderPagination();
+            }
+        })
+        .catch(err => {
+            console.error('Error loading worlds:', err);
+            loading.style.display = 'none';
+            error.style.display = 'block';
+            document.getElementById('errorMessage').textContent = err.message;
+        });
+}
+
+function renderPagination() {
+    const pagination = document.getElementById('pagination');
+    let html = '';
+    
+    // Previous button
+    if (currentPage > 1) {
+        html += `<button class="btn btn-secondary" onclick="loadWorlds(${currentPage - 1})">
+            <i class="fas fa-chevron-left"></i> Previous
+        </button>`;
+    }
+    
+    // Page numbers
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentPage) {
+            html += `<button class="btn btn-primary">${i}</button>`;
+        } else {
+            html += `<button class="btn btn-secondary" onclick="loadWorlds(${i})">${i}</button>`;
+        }
+    }
+    
+    // Next button
+    if (currentPage < totalPages) {
+        html += `<button class="btn btn-secondary" onclick="loadWorlds(${currentPage + 1})">
+            Next <i class="fas fa-chevron-right"></i>
+        </button>`;
+    }
+    
+    pagination.innerHTML = html;
+}
+
+function downloadWorld(worldId, fileId, worldName, projectUrl, button) {
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+    
+    fetch(`/servers/${serverId}/worlds/download/${worldId}/${fileId}`)
+        .then(response => {
+            return response.json().then(data => {
+                if (!response.ok) {
+                    // Handle specific error reasons
+                    if (data.reason === 'curseforge_policy') {
+                        throw new Error('CURSEFORGE_POLICY:' + (data.fileName || worldName));
+                    }
+                    throw new Error(data.error || data.message || `HTTP ${response.status}`);
+                }
+                return data;
+            });
+        })
+        .then(data => {
+            if (data.success) {
+                button.innerHTML = '<i class="fas fa-check"></i> Downloaded!';
+                button.classList.remove('btn-primary');
+                button.classList.add('btn-success');
+                
+                let message = `✅ ${worldName} downloaded successfully!\n\n`;
+                message += `📁 Location: ${data.filePath}\n`;
+                if (data.fileSize) {
+                    message += `📦 Size: ${data.fileSize}\n`;
+                }
+                message += `\n💡 Next Steps:\n`;
+                message += `1. Go to World Management page\n`;
+                message += `2. Find the .zip file in File Manager (server root)\n`;
+                message += `3. Extract it to create the world folder\n`;
+                message += `4. Select the world in World Management`;
+                
+                if (data.alreadyExists) {
+                    message = `ℹ️ ${worldName} was already downloaded!\n\n`;
+                    message += `📁 Location: ${data.filePath}\n`;
+                    if (data.fileSize) {
+                        message += `📦 Size: ${data.fileSize}\n`;
+                    }
+                    message += `\nThe file already exists in your server root directory.`;
+                }
+                
+                showToast('success', message);
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-primary');
+                    button.disabled = false;
+                }, 3000);
+            } else {
+                throw new Error(data.error || 'Unknown error occurred');
+            }
+        })
+        .catch(error => {
+            console.error('Download error:', error);
+            button.innerHTML = originalText;
+            button.disabled = false;
+            
+            let errorMsg = error.message || 'Unknown error occurred';
+            
+            // Check if this is a CurseForge policy error
+            if (errorMsg.startsWith('CURSEFORGE_POLICY:')) {
+                const fileName = errorMsg.split(':')[1] || worldName;
+                
+                let message = `🔒 CurseForge Download Policy\n\n`;
+                message += `CurseForge does not allow automated downloads for "${worldName}".\n\n`;
+                message += `This is a CurseForge policy to:\n`;
+                message += `• Track downloads properly\n`;
+                message += `• Give credit to world creators\n`;
+                message += `• Show important information to users\n\n`;
+                message += `📥 How to Download Manually:\n\n`;
+                message += `1. Click "View on CurseForge" button below\n`;
+                message += `2. Click the orange "Download" button on CurseForge\n`;
+                message += `3. Save "${fileName}" to your computer\n`;
+                message += `4. Go to World Management in this panel\n`;
+                message += `5. Use File Manager to upload the .zip file\n`;
+                message += `6. Extract and use the world\n\n`;
+                message += `⏱️ This takes about 2 minutes total.`;
+                
+                showToast('info', message);
+                
+                // Ask if user wants to open CurseForge
+                setTimeout(() => {
+                    if (confirm(`Open "${worldName}" on CurseForge now?\n\nYou'll be able to download it directly from their website.`)) {
+                        window.open(projectUrl, '_blank');
+                    }
+                }, 1500);
+                
+                return;
+            }
+            
+            // Generic error handling
+            let message = `❌ Download Failed\n\n`;
+            message += `World: ${worldName}\n`;
+            message += `Error: ${errorMsg}\n\n`;
+            message += `📥 Try Manual Download:\n\n`;
+            message += `1. Click "View on CurseForge" button\n`;
+            message += `2. Download the world file\n`;
+            message += `3. Go to World Management\n`;
+            message += `4. Upload using File Manager\n\n`;
+            message += `If the problem persists, try a different world.`;
+            
+            showToast('error', message);
+        });
+}
+
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    
+    let bgColor;
+    if (type === 'success') {
+        bgColor = 'var(--success)';
+    } else if (type === 'error') {
+        bgColor = 'var(--danger)';
+    } else if (type === 'info') {
+        bgColor = '#2563eb'; // Blue for info
+    } else {
+        bgColor = 'var(--primary)';
+    }
+    
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${bgColor};
+        color: white;
+        padding: 16px 24px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10001;
+        max-width: 500px;
+        white-space: pre-line;
+        animation: slideIn 0.3s ease;
+        font-size: 14px;
+        line-height: 1.5;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    // Longer timeout for info messages (they contain instructions)
+    const timeout = type === 'info' ? 12000 : 8000;
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, timeout);
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Search form
+    document.getElementById('searchForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        currentSearch = document.getElementById('searchInput').value;
+        loadWorlds(1);
+    });
+    
+    // Load initial worlds
+    loadWorlds(1);
+});
+</script>
+
+<%- include('../partials/footer') %>

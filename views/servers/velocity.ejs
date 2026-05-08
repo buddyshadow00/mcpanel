@@ -1,0 +1,1461 @@
+<%- include('../partials/header') %>
+
+<div class="page-header" data-server-id="<%= server.id %>" data-server-port="<%= server.port %>">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-rocket"></i>
+            Velocity Configuration
+            <span class="dynamic-badge">DYNAMIC TOML EDITOR</span>
+        </h1>
+        <p class="page-subtitle">
+            <i class="fas fa-network-wired"></i> <%= server.name %> - Modern Proxy Configuration
+            <% if (typeof req !== 'undefined' && req.get('Referer') && req.get('Referer').includes('/files')) { %>
+                <span class="breadcrumb-info">
+                    <i class="fas fa-arrow-left"></i> Opened from File Manager
+                </span>
+            <% } %>
+        </p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-secondary" onclick="resetToDefaults()">
+            <i class="fas fa-undo"></i>
+            Reset to Defaults
+        </button>
+        <button class="btn btn-info" onclick="openTextEditor()" title="Open Text Editor">
+            <i class="fas fa-code"></i>
+            Text Editor
+        </button>
+        <button class="btn btn-success" onclick="window.location.href='/servers/<%= server.id %>/files'" title="Back to File Manager">
+            <i class="fas fa-folder"></i>
+            File Manager
+        </button>
+        <button class="btn btn-primary" onclick="saveVelocityConfig()">
+            <i class="fas fa-save"></i>
+            Save Configuration
+        </button>
+    </div>
+</div>
+
+<!-- Enhanced Port Protection Notice -->
+<div class="card protection-notice">
+    <div class="card-body">
+        <div class="protection-content">
+            <div class="protection-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="protection-text">
+                <div class="protection-title">🔒 Smart Port Protection Active</div>
+                <div class="protection-description">
+                    Proxy bind port is automatically managed (currently: <strong><%= server.port %></strong>) and cannot be changed. 
+                    All other Velocity settings are fully customizable through this dynamic TOML interface.
+                </div>
+            </div>
+            <div class="protection-status">
+                <span class="status-badge protected">PROTECTED</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Velocity Configuration Form -->
+<form id="velocityForm">
+    <div class="velocity-grid">
+        
+        <!-- Basic Proxy Settings -->
+        <div class="card velocity-section">
+            <div class="card-header">
+                <h3><i class="fas fa-rocket"></i> Basic Proxy Settings</h3>
+            </div>
+            <div class="card-body">
+                
+                <!-- Bind Address (Protected) -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Bind Address</label>
+                        <span class="property-description">Network address and port for proxy connections (Protected)</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="text" name="bind" class="form-control" value="0.0.0.0:<%= server.port %>" disabled>
+                        <div class="property-badge protected">Protected</div>
+                    </div>
+                </div>
+
+                <!-- MOTD -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Message of the Day (MOTD)</label>
+                        <span class="property-description">Server description shown in server list</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="text" name="motd" class="form-control" placeholder="A Velocity Server">
+                    </div>
+                </div>
+
+                <!-- Show Max Players -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Show Max Players</label>
+                        <span class="property-description">Maximum players shown in server list</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="number" name="show-max-players" class="form-control" min="1" max="10000" value="500">
+                    </div>
+                </div>
+
+                <!-- Online Mode -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Online Mode</label>
+                        <span class="property-description">Verify player accounts with Mojang servers</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="online-mode" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Player Forwarding Settings -->
+        <div class="card velocity-section">
+            <div class="card-header">
+                <h3><i class="fas fa-user-shield"></i> Player Forwarding</h3>
+            </div>
+            <div class="card-body">
+
+                <!-- Player Info Forwarding Mode -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Forwarding Mode</label>
+                        <span class="property-description">How player information is forwarded to backend servers</span>
+                    </div>
+                    <div class="property-control">
+                        <select name="player-info-forwarding-mode" class="form-control">
+                            <option value="NONE">None (No forwarding)</option>
+                            <option value="LEGACY">Legacy (BungeeCord)</option>
+                            <option value="MODERN" selected>Modern (Velocity)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Forwarding Secret File -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Forwarding Secret File</label>
+                        <span class="property-description">File containing the forwarding secret</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="text" name="forwarding-secret-file" class="form-control" value="forwarding.secret">
+                    </div>
+                </div>
+
+                <!-- Prevent Client Proxy Connections -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Prevent Client Proxy Connections</label>
+                        <span class="property-description">Block connections from other proxies</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="prevent-client-proxy-connections">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Enable Player Address Logging -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Enable Player Address Logging</label>
+                        <span class="property-description">Log player IP addresses</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="enable-player-address-logging" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Server Network Settings -->
+        <div class="card velocity-section">
+            <div class="card-header">
+                <h3><i class="fas fa-network-wired"></i> Server Network</h3>
+            </div>
+            <div class="card-body">
+
+                <!-- Backend Servers -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Backend Servers</label>
+                        <span class="property-description">Configure your backend Minecraft servers</span>
+                    </div>
+                    <div class="property-control">
+                        <div id="servers-list" class="servers-list">
+                            <!-- Dynamic server list will be populated here -->
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addServer()">
+                            <i class="fas fa-plus"></i> Add Server
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Try Order -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Try Order</label>
+                        <span class="property-description">Order of servers to try when connecting</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="text" name="try" class="form-control" placeholder="lobby,survival">
+                        <small class="form-text text-muted">Comma-separated server names</small>
+                    </div>
+                </div>
+
+                <!-- Forced Hosts -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Forced Hosts</label>
+                        <span class="property-description">Map specific domains to servers</span>
+                    </div>
+                    <div class="property-control">
+                        <div id="forced-hosts-list" class="forced-hosts-list">
+                            <!-- Dynamic forced hosts will be populated here -->
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addForcedHost()">
+                            <i class="fas fa-plus"></i> Add Forced Host
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Connection Settings -->
+        <div class="card velocity-section">
+            <div class="card-header">
+                <h3><i class="fas fa-plug"></i> Connection Settings</h3>
+            </div>
+            <div class="card-body">
+
+                <!-- Kick Existing Players -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Kick Existing Players</label>
+                        <span class="property-description">Kick players with same name when new player joins</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="kick-existing-players">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Ping Passthrough -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Ping Passthrough</label>
+                        <span class="property-description">How to handle server list ping</span>
+                    </div>
+                    <div class="property-control">
+                        <select name="ping-passthrough" class="form-control">
+                            <option value="DISABLED">Disabled</option>
+                            <option value="MODS">Mods Only</option>
+                            <option value="DESCRIPTION">Description Only</option>
+                            <option value="ALL">All</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Failover on Unexpected Disconnect -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Failover on Unexpected Disconnect</label>
+                        <span class="property-description">Move players to fallback server on disconnect</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="failover-on-unexpected-server-disconnect" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- BungeeCord Plugin Message Channel -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>BungeeCord Plugin Message Channel</label>
+                        <span class="property-description">Enable BungeeCord plugin compatibility</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="bungee-plugin-message-channel" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Advanced Settings -->
+        <div class="card velocity-section">
+            <div class="card-header">
+                <h3><i class="fas fa-cogs"></i> Advanced Settings</h3>
+            </div>
+            <div class="card-body">
+
+                <!-- Compression Threshold -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Compression Threshold</label>
+                        <span class="property-description">Packet size threshold for compression (bytes)</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="number" name="compression-threshold" class="form-control" value="256" min="0">
+                    </div>
+                </div>
+
+                <!-- Compression Level -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Compression Level</label>
+                        <span class="property-description">Compression level (-1 for default, 0-9)</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="range" name="compression-level" class="range-slider" min="-1" max="9" value="-1">
+                        <span class="range-value">Default</span>
+                    </div>
+                </div>
+
+                <!-- Login Rate Limit -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Login Rate Limit</label>
+                        <span class="property-description">Milliseconds between login attempts</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="number" name="login-ratelimit" class="form-control" value="3000" min="0">
+                    </div>
+                </div>
+
+                <!-- Connection Timeout -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Connection Timeout</label>
+                        <span class="property-description">Connection timeout in milliseconds</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="number" name="connection-timeout" class="form-control" value="5000" min="1000">
+                    </div>
+                </div>
+
+                <!-- Read Timeout -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Read Timeout</label>
+                        <span class="property-description">Read timeout in milliseconds</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="number" name="read-timeout" class="form-control" value="30000" min="1000">
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Logging & Debug Settings -->
+        <div class="card velocity-section">
+            <div class="card-header">
+                <h3><i class="fas fa-file-alt"></i> Logging & Debug</h3>
+            </div>
+            <div class="card-body">
+
+                <!-- Show Ping Requests -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Show Ping Requests</label>
+                        <span class="property-description">Log server list ping requests</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="show-ping-requests">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Log Command Executions -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Log Command Executions</label>
+                        <span class="property-description">Log all command executions</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="log-command-executions">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Log Player Connections -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Log Player Connections</label>
+                        <span class="property-description">Log player join/leave events</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="log-player-connections" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Announce Proxy Commands -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Announce Proxy Commands</label>
+                        <span class="property-description">Show proxy commands in tab completion</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="announce-proxy-commands" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Query Settings -->
+        <div class="card velocity-section">
+            <div class="card-header">
+                <h3><i class="fas fa-search"></i> Query Settings</h3>
+            </div>
+            <div class="card-body">
+
+                <!-- Enable Query -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Enable Query</label>
+                        <span class="property-description">Enable GameSpy4 query protocol</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="query-enabled">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Query Port -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Query Port</label>
+                        <span class="property-description">Port for query protocol</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="number" name="query-port" class="form-control" value="" min="1" max="65535">
+                    </div>
+                </div>
+
+                <!-- Query Map -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Query Map</label>
+                        <span class="property-description">Map name shown in query response</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="text" name="query-map" class="form-control" value="Velocity">
+                    </div>
+                </div>
+
+                <!-- Show Plugins -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Show Plugins in Query</label>
+                        <span class="property-description">Show plugin list in query response</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="query-show-plugins">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</form>
+
+<!-- Enhanced CSS for Velocity TOML Editor -->
+<style>
+/* Enhanced Header Styling */
+.dynamic-badge {
+    background: linear-gradient(45deg, #00BCD4, #26C6DA);
+    color: white;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    margin-left: 12px;
+    animation: velocity-pulse 2s infinite;
+}
+
+@keyframes velocity-pulse {
+    0%, 100% { box-shadow: 0 0 5px rgba(0, 188, 212, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(0, 188, 212, 0.8); }
+}
+
+.breadcrumb-info {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-left: 16px;
+    padding: 4px 8px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+}
+
+/* Enhanced Protection Notice */
+.protection-notice {
+    margin-bottom: 20px;
+    border-left: 4px solid #00BCD4;
+    background: linear-gradient(135deg, rgba(0, 188, 212, 0.05), rgba(38, 198, 218, 0.02));
+}
+
+.protection-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+}
+
+.protection-icon {
+    flex-shrink: 0;
+}
+
+.protection-icon i {
+    color: #00BCD4;
+    font-size: 24px;
+    animation: shield-pulse 3s infinite;
+}
+
+@keyframes shield-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.protection-text {
+    flex: 1;
+}
+
+.protection-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    font-size: 15px;
+}
+
+.protection-description {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.protection-status {
+    flex-shrink: 0;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.protected {
+    background: linear-gradient(45deg, #dc3545, #e74c3c);
+    color: white;
+    animation: protected-glow 2s infinite;
+}
+
+@keyframes protected-glow {
+    0%, 100% { box-shadow: 0 0 8px rgba(220, 53, 69, 0.3); }
+    50% { box-shadow: 0 0 16px rgba(220, 53, 69, 0.6); }
+}
+
+.velocity-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.velocity-section {
+    height: fit-content;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.velocity-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border-left-color: #00BCD4;
+}
+
+.property-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s ease;
+}
+
+.property-item:hover {
+    background-color: rgba(0, 188, 212, 0.02);
+    border-radius: 8px;
+    margin: 0 -8px;
+    padding: 16px 8px;
+}
+
+.property-item:last-child {
+    border-bottom: none;
+}
+
+.property-label {
+    flex: 1;
+    min-width: 0;
+}
+
+.property-label label {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    display: block;
+    cursor: pointer;
+}
+
+.property-description {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.property-control {
+    flex: 0 0 200px;
+    position: relative;
+}
+
+.property-control input,
+.property-control select {
+    width: 100%;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.property-control input:focus,
+.property-control select:focus {
+    border-color: #00BCD4;
+    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+}
+
+.property-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #00BCD4;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+    z-index: 10;
+}
+
+.property-badge.protected {
+    background: linear-gradient(45deg, #dc3545, #e74c3c);
+    animation: badge-pulse 2s infinite;
+}
+
+@keyframes badge-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Enhanced Toggle Switch Styles */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 54px;
+    height: 28px;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, #ccc, #ddd);
+    transition: 0.3s;
+    border-radius: 28px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+input:checked + .toggle-slider {
+    background: linear-gradient(45deg, #00BCD4, #26C6DA);
+    box-shadow: 0 0 10px rgba(0, 188, 212, 0.3);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+.toggle-slider:hover {
+    box-shadow: 0 0 8px rgba(0, 188, 212, 0.2);
+}
+
+/* Enhanced Range Slider Styles */
+.range-slider {
+    width: 100%;
+    margin-bottom: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, #00BCD4 0%, #00BCD4 50%, #ddd 50%, #ddd 100%);
+    outline: none;
+    transition: background 0.2s ease;
+}
+
+.range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #00BCD4;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 188, 212, 0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.range-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(0, 188, 212, 0.5);
+}
+
+.range-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #00BCD4;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0, 188, 212, 0.3);
+}
+
+.range-value {
+    font-size: 12px;
+    color: #00BCD4;
+    text-align: center;
+    display: block;
+    font-weight: 600;
+    background: rgba(0, 188, 212, 0.1);
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+/* Server List Styles */
+.servers-list, .forced-hosts-list {
+    margin-bottom: 12px;
+}
+
+.server-item, .forced-host-item {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 8px;
+    background: rgba(0, 188, 212, 0.05);
+    border-radius: 6px;
+    border: 1px solid rgba(0, 188, 212, 0.2);
+}
+
+.server-item input, .forced-host-item input {
+    flex: 1;
+    margin: 0;
+}
+
+.server-item .btn, .forced-host-item .btn {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+/* Enhanced Card Headers */
+.card-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.card-header h3 i {
+    color: #00BCD4;
+}
+
+/* Improved Form Controls */
+.form-control {
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    border-color: #00BCD4;
+    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+    outline: none;
+}
+
+.form-control:disabled {
+    background: rgba(108, 117, 125, 0.1);
+    border-color: rgba(108, 117, 125, 0.2);
+    cursor: not-allowed;
+}
+
+/* Enhanced Buttons */
+.btn {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 10px 16px;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #00BCD4, #26C6DA);
+    color: white;
+}
+
+.btn-secondary {
+    background: linear-gradient(45deg, #6c757d, #868e96);
+    color: white;
+}
+
+.btn-success {
+    background: linear-gradient(45deg, var(--success), #28a745);
+    color: white;
+}
+
+.btn-outline-primary {
+    border: 2px solid #00BCD4;
+    color: #00BCD4;
+    background: transparent;
+}
+
+.btn-outline-primary:hover {
+    background: #00BCD4;
+    color: white;
+}
+
+.btn-danger {
+    background: linear-gradient(45deg, #dc3545, #e74c3c);
+    color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .velocity-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .property-item {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .property-control {
+        flex: 1;
+        width: 100%;
+    }
+    
+    .page-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .protection-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
+}
+
+/* Loading State */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #00BCD4;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Success Animation */
+@keyframes success-pulse {
+    0% { background-color: var(--success); transform: scale(1); }
+    50% { background-color: #28a745; transform: scale(1.05); }
+    100% { background-color: #00BCD4; transform: scale(1); }
+}
+
+.save-success {
+    animation: success-pulse 0.6s ease;
+}
+
+/* Velocity-specific animations */
+@keyframes velocity-glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(0, 188, 212, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(0, 188, 212, 0.6); }
+}
+
+.velocity-section.active {
+    animation: velocity-glow 1s ease;
+}
+</style>
+<script>
+// Get server info from data attributes
+const pageHeader = document.querySelector('.page-header');
+const serverId = pageHeader.dataset.serverId || '1';
+const serverPort = parseInt(pageHeader.dataset.serverPort) || 25565;
+let currentConfig = {};
+
+// Load Velocity configuration on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadVelocityConfig();
+    setupRangeSliders();
+    setupFormValidation();
+});
+
+// Open text editor for velocity.toml
+function openTextEditor() {
+    window.open(`/servers/${serverId}/files/view?path=velocity.toml`, '_blank');
+}
+
+// Load Velocity configuration from server
+async function loadVelocityConfig() {
+    try {
+        showLoading(true);
+        
+        const response = await fetch(`/servers/${serverId}/velocity/get`);
+        const data = await response.json();
+        
+        if (data.success) {
+            currentConfig = data.config;
+            populateForm(currentConfig);
+            console.log('Velocity configuration loaded successfully');
+        } else {
+            showNotification('Error loading configuration: ' + (data.error || 'Unknown error'), 'error');
+        }
+    } catch (error) {
+        console.error('Error loading Velocity config:', error);
+        showNotification('Failed to load Velocity configuration', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Populate form with configuration data
+function populateForm(config) {
+    // Basic settings
+    setFormValue('motd', config.motd || 'A Velocity Server');
+    setFormValue('show-max-players', config['show-max-players'] || 500);
+    setFormValue('online-mode', config['online-mode'] !== false);
+    setFormValue('prevent-client-proxy-connections', config['prevent-client-proxy-connections'] || false);
+    setFormValue('player-info-forwarding-mode', config['player-info-forwarding-mode'] || 'MODERN');
+    setFormValue('forwarding-secret-file', config['forwarding-secret-file'] || 'forwarding.secret');
+    setFormValue('enable-player-address-logging', config['enable-player-address-logging'] !== false);
+    setFormValue('kick-existing-players', config['kick-existing-players'] || false);
+    setFormValue('ping-passthrough', config['ping-passthrough'] || 'DISABLED');
+    setFormValue('failover-on-unexpected-server-disconnect', config['failover-on-unexpected-server-disconnect'] !== false);
+    setFormValue('bungee-plugin-message-channel', config['bungee-plugin-message-channel'] !== false);
+    setFormValue('show-ping-requests', config['show-ping-requests'] || false);
+    setFormValue('log-command-executions', config['log-command-executions'] || false);
+    setFormValue('log-player-connections', config['log-player-connections'] !== false);
+    setFormValue('announce-proxy-commands', config['announce-proxy-commands'] !== false);
+    
+    // Advanced settings
+    if (config.advanced) {
+        setFormValue('compression-threshold', config.advanced['compression-threshold'] || 256);
+        setFormValue('compression-level', config.advanced['compression-level'] || -1);
+        setFormValue('login-ratelimit', config.advanced['login-ratelimit'] || 3000);
+        setFormValue('connection-timeout', config.advanced['connection-timeout'] || 5000);
+        setFormValue('read-timeout', config.advanced['read-timeout'] || 30000);
+    }
+    
+    // Query settings
+    if (config.query) {
+        setFormValue('query-enabled', config.query.enabled || false);
+        setFormValue('query-port', config.query.port || (serverPort + 1));
+        setFormValue('query-map', config.query.map || 'Velocity');
+        setFormValue('query-show-plugins', config.query['show-plugins'] || false);
+    }
+    
+    // Servers
+    populateServers(config.servers || {});
+    
+    // Try order
+    if (config.try && Array.isArray(config.try)) {
+        setFormValue('try', config.try.join(','));
+    }
+    
+    // Forced hosts
+    populateForcedHosts(config['forced-hosts'] || {});
+    
+    updateRangeValues();
+}
+
+// Set form value helper
+function setFormValue(name, value) {
+    const element = document.querySelector(`[name="${name}"]`);
+    if (!element) return;
+    
+    if (element.type === 'checkbox') {
+        element.checked = Boolean(value);
+    } else if (element.type === 'range') {
+        element.value = value;
+        updateRangeValue(element);
+    } else {
+        element.value = value;
+    }
+}
+
+// Populate servers list
+function populateServers(servers) {
+    const serversList = document.getElementById('servers-list');
+    serversList.innerHTML = '';
+    
+    Object.entries(servers).forEach(([name, address]) => {
+        addServerItem(name, address);
+    });
+    
+    if (Object.keys(servers).length === 0) {
+        addServerItem('lobby', 'localhost:25565');
+    }
+}
+
+// Add server item to list
+function addServerItem(name = '', address = '') {
+    const serversList = document.getElementById('servers-list');
+    const item = document.createElement('div');
+    item.className = 'server-item';
+    item.innerHTML = `
+        <input type="text" class="form-control" placeholder="Server name" value="${name}">
+        <input type="text" class="form-control" placeholder="address:port" value="${address}">
+        <button type="button" class="btn btn-danger btn-sm" onclick="removeServerItem(this)">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    serversList.appendChild(item);
+}
+
+// Remove server item
+function removeServerItem(button) {
+    button.closest('.server-item').remove();
+}
+
+// Add new server
+function addServer() {
+    addServerItem();
+}
+
+// Populate forced hosts list
+function populateForcedHosts(forcedHosts) {
+    const forcedHostsList = document.getElementById('forced-hosts-list');
+    forcedHostsList.innerHTML = '';
+    
+    Object.entries(forcedHosts).forEach(([host, server]) => {
+        addForcedHostItem(host, server);
+    });
+}
+
+// Add forced host item to list
+function addForcedHostItem(host = '', server = '') {
+    const forcedHostsList = document.getElementById('forced-hosts-list');
+    const item = document.createElement('div');
+    item.className = 'forced-host-item';
+    item.innerHTML = `
+        <input type="text" class="form-control" placeholder="domain.com" value="${host}">
+        <input type="text" class="form-control" placeholder="server name" value="${server}">
+        <button type="button" class="btn btn-danger btn-sm" onclick="removeForcedHostItem(this)">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    forcedHostsList.appendChild(item);
+}
+
+// Remove forced host item
+function removeForcedHostItem(button) {
+    button.closest('.forced-host-item').remove();
+}
+
+// Add new forced host
+function addForcedHost() {
+    addForcedHostItem();
+}
+
+// Setup range sliders
+function setupRangeSliders() {
+    document.querySelectorAll('.range-slider').forEach(slider => {
+        slider.addEventListener('input', function() {
+            updateRangeValue(this);
+        });
+    });
+}
+
+// Update range slider value display
+function updateRangeValue(slider) {
+    const valueSpan = slider.nextElementSibling;
+    if (valueSpan && valueSpan.classList.contains('range-value')) {
+        let displayValue = slider.value;
+        
+        if (slider.name === 'compression-level') {
+            displayValue = slider.value === '-1' ? 'Default' : slider.value;
+        } else if (slider.name === 'view-distance' || slider.name === 'simulation-distance') {
+            displayValue = slider.value + ' chunks';
+        }
+        
+        valueSpan.textContent = displayValue;
+    }
+}
+
+// Update all range values
+function updateRangeValues() {
+    document.querySelectorAll('.range-slider').forEach(updateRangeValue);
+}
+
+// Setup form validation
+function setupFormValidation() {
+    // Add real-time validation for ports
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+        if (input.name.includes('port')) {
+            input.addEventListener('input', function() {
+                const value = parseInt(this.value);
+                if (value < 1 || value > 65535) {
+                    this.style.borderColor = '#dc3545';
+                } else {
+                    this.style.borderColor = '';
+                }
+            });
+        }
+    });
+}
+
+// Save Velocity configuration
+async function saveVelocityConfig() {
+    try {
+        showLoading(true);
+        
+        const config = collectFormData();
+        
+        const response = await fetch(`/servers/${serverId}/velocity/save`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ config })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification(data.message || 'Velocity configuration saved successfully!', 'success');
+            if (data.warning) {
+                setTimeout(() => showNotification(data.warning, 'warning'), 2000);
+            }
+            
+            // Add success animation
+            document.querySelector('.btn-primary').classList.add('save-success');
+            setTimeout(() => {
+                document.querySelector('.btn-primary').classList.remove('save-success');
+            }, 600);
+            
+        } else {
+            showNotification('Error saving configuration: ' + (data.error || 'Unknown error'), 'error');
+        }
+    } catch (error) {
+        console.error('Error saving Velocity config:', error);
+        showNotification('Failed to save Velocity configuration', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Collect form data into configuration object
+function collectFormData() {
+    const config = {
+        'config-version': '2.6',
+        'bind': `0.0.0.0:${serverPort}`, // Protected
+        'motd': getFormValue('motd') || 'A Velocity Server',
+        'show-max-players': parseInt(getFormValue('show-max-players')) || 500,
+        'online-mode': getFormValue('online-mode', 'checkbox'),
+        'prevent-client-proxy-connections': getFormValue('prevent-client-proxy-connections', 'checkbox'),
+        'player-info-forwarding-mode': getFormValue('player-info-forwarding-mode') || 'MODERN',
+        'forwarding-secret-file': getFormValue('forwarding-secret-file') || 'forwarding.secret',
+        'enable-player-address-logging': getFormValue('enable-player-address-logging', 'checkbox'),
+        'kick-existing-players': getFormValue('kick-existing-players', 'checkbox'),
+        'ping-passthrough': getFormValue('ping-passthrough') || 'DISABLED',
+        'failover-on-unexpected-server-disconnect': getFormValue('failover-on-unexpected-server-disconnect', 'checkbox'),
+        'bungee-plugin-message-channel': getFormValue('bungee-plugin-message-channel', 'checkbox'),
+        'show-ping-requests': getFormValue('show-ping-requests', 'checkbox'),
+        'log-command-executions': getFormValue('log-command-executions', 'checkbox'),
+        'log-player-connections': getFormValue('log-player-connections', 'checkbox'),
+        'announce-proxy-commands': getFormValue('announce-proxy-commands', 'checkbox')
+    };
+    
+    // Collect servers
+    config.servers = {};
+    document.querySelectorAll('.server-item').forEach(item => {
+        const inputs = item.querySelectorAll('input');
+        const name = inputs[0].value.trim();
+        const address = inputs[1].value.trim();
+        if (name && address) {
+            config.servers[name] = address;
+        }
+    });
+    
+    // Collect try order
+    const tryOrder = getFormValue('try');
+    if (tryOrder) {
+        config.try = tryOrder.split(',').map(s => s.trim()).filter(s => s);
+    }
+    
+    // Collect forced hosts
+    config['forced-hosts'] = {};
+    document.querySelectorAll('.forced-host-item').forEach(item => {
+        const inputs = item.querySelectorAll('input');
+        const host = inputs[0].value.trim();
+        const server = inputs[1].value.trim();
+        if (host && server) {
+            config['forced-hosts'][host] = server;
+        }
+    });
+    
+    // Advanced settings
+    config.advanced = {
+        'compression-threshold': parseInt(getFormValue('compression-threshold')) || 256,
+        'compression-level': parseInt(getFormValue('compression-level')) || -1,
+        'login-ratelimit': parseInt(getFormValue('login-ratelimit')) || 3000,
+        'connection-timeout': parseInt(getFormValue('connection-timeout')) || 5000,
+        'read-timeout': parseInt(getFormValue('read-timeout')) || 30000
+    };
+    
+    // Query settings
+    config.query = {
+        'enabled': getFormValue('query-enabled', 'checkbox'),
+        'port': parseInt(getFormValue('query-port')) || (serverPort + 1),
+        'map': getFormValue('query-map') || 'Velocity',
+        'show-plugins': getFormValue('query-show-plugins', 'checkbox')
+    };
+    
+    return config;
+}
+
+// Get form value helper
+function getFormValue(name, type = 'text') {
+    const element = document.querySelector(`[name="${name}"]`);
+    if (!element) return type === 'checkbox' ? false : '';
+    
+    if (type === 'checkbox') {
+        return element.checked;
+    }
+    return element.value;
+}
+
+// Reset to defaults
+async function resetToDefaults() {
+    if (!confirm('Are you sure you want to reset all settings to defaults? This cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        showLoading(true);
+        
+        const response = await fetch(`/servers/${serverId}/velocity/reset`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification(data.message || 'Configuration reset to defaults!', 'success');
+            currentConfig = data.config;
+            populateForm(currentConfig);
+        } else {
+            showNotification('Error resetting configuration: ' + (data.error || 'Unknown error'), 'error');
+        }
+    } catch (error) {
+        console.error('Error resetting Velocity config:', error);
+        showNotification('Failed to reset configuration', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Show loading state
+function showLoading(show) {
+    const form = document.getElementById('velocityForm');
+    if (show) {
+        form.classList.add('loading');
+    } else {
+        form.classList.remove('loading');
+    }
+}
+
+// Show notification
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    // Add notification styles if not already present
+    if (!document.querySelector('#notification-styles')) {
+        const styles = document.createElement('style');
+        styles.id = 'notification-styles';
+        styles.textContent = `
+            .notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+                max-width: 400px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            .notification-success { background: linear-gradient(45deg, #28a745, #34ce57); }
+            .notification-error { background: linear-gradient(45deg, #dc3545, #e74c3c); }
+            .notification-warning { background: linear-gradient(45deg, #ffc107, #ffcd39); color: #000; }
+            .notification-info { background: linear-gradient(45deg, #00BCD4, #26C6DA); }
+            .notification-content { display: flex; align-items: center; gap: 8px; }
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(styles);
+    }
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 5000);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+        if (e.key === 's') {
+            e.preventDefault();
+            saveVelocityConfig();
+        } else if (e.key === 'r') {
+            e.preventDefault();
+            resetToDefaults();
+        }
+    }
+});
+
+// Auto-save draft (optional)
+let autoSaveTimeout;
+document.addEventListener('input', function() {
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(() => {
+        // Could implement auto-save draft functionality here
+        console.log('Auto-save draft...');
+    }, 5000);
+});
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,1291 @@
+﻿<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-cogs"></i>
+            Server Properties
+            <span class="dynamic-badge">DYNAMIC EDITOR</span>
+        </h1>
+        <p class="page-subtitle">
+            <i class="fas fa-server"></i> <%= server.name %> - Interactive Configuration
+            <% if (typeof req !== 'undefined' && req.get('Referer') && req.get('Referer').includes('/files')) { %>
+                <span class="breadcrumb-info">
+                    <i class="fas fa-arrow-left"></i> Opened from File Manager
+                </span>
+            <% } %>
+        </p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-secondary" onclick="resetToDefaults()">
+            <i class="fas fa-undo"></i>
+            Reset to Defaults
+        </button>
+        <button class="btn btn-info" onclick="openTextEditor()" title="Open Text Editor">
+            <i class="fas fa-code"></i>
+            Text Editor
+        </button>
+        <button class="btn btn-success" onclick="window.location.href='/servers/<%= server.id %>/files'" title="Back to File Manager">
+            <i class="fas fa-folder"></i>
+            File Manager
+        </button>
+        <button class="btn btn-primary" onclick="saveProperties()">
+            <i class="fas fa-save"></i>
+            Save Properties
+        </button>
+    </div>
+</div>
+
+<!-- Enhanced Port Protection Notice -->
+<div class="card protection-notice">
+    <div class="card-body">
+        <div class="protection-content">
+            <div class="protection-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="protection-text">
+                <div class="protection-title">🔒 Smart Port Protection Active</div>
+                <div class="protection-description">
+                    Server port is automatically managed (currently: <strong><%= server.port %></strong>) and cannot be changed. 
+                    All other settings are fully customizable through this dynamic interface.
+                </div>
+            </div>
+            <div class="protection-status">
+                <span class="status-badge protected">PROTECTED</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Properties Form -->
+<form id="propertiesForm">
+    <div class="properties-grid">
+        
+        <!-- Basic Server Settings -->
+        <div class="card properties-section">
+            <div class="card-header">
+                <h3><i class="fas fa-server"></i> Basic Server Settings</h3>
+            </div>
+            <div class="card-body">
+                
+                <!-- Server Port (Protected) -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Server Port</label>
+                        <span class="property-description">Network port for server connections (Protected)</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="number" name="server-port" class="form-control" value="<%= server.port %>" disabled>
+                        <div class="property-badge protected">Protected</div>
+                    </div>
+                </div>
+
+                <!-- Server IP -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Server IP</label>
+                        <span class="property-description">IP address to bind to (leave empty for all interfaces)</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="text" name="server-ip" class="form-control" placeholder="Leave empty for all IPs">
+                    </div>
+                </div>
+
+                <!-- MOTD -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Message of the Day (MOTD)</label>
+                        <span class="property-description">Server description shown in server list</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="text" name="motd" class="form-control" placeholder="A Minecraft Server">
+                    </div>
+                </div>
+
+                <!-- Max Players -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Max Players</label>
+                        <span class="property-description">Maximum number of players allowed</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="number" name="max-players" class="form-control" min="1" max="1000" value="20">
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Gameplay Settings -->
+        <div class="card properties-section">
+            <div class="card-header">
+                <h3><i class="fas fa-gamepad"></i> Gameplay Settings</h3>
+            </div>
+            <div class="card-body">
+
+                <!-- Game Mode -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Default Game Mode</label>
+                        <span class="property-description">Default game mode for new players</span>
+                    </div>
+                    <div class="property-control">
+                        <select name="gamemode" class="form-control">
+                            <option value="survival">Survival</option>
+                            <option value="creative">Creative</option>
+                            <option value="adventure">Adventure</option>
+                            <option value="spectator">Spectator</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Difficulty -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Difficulty</label>
+                        <span class="property-description">Game difficulty level</span>
+                    </div>
+                    <div class="property-control">
+                        <select name="difficulty" class="form-control">
+                            <option value="peaceful">Peaceful</option>
+                            <option value="easy">Easy</option>
+                            <option value="normal">Normal</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Hardcore -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Hardcore Mode</label>
+                        <span class="property-description">Enable hardcore mode (permanent death)</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="hardcore">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- PvP -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Player vs Player (PvP)</label>
+                        <span class="property-description">Allow players to fight each other</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="pvp" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Allow Flight -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Allow Flight</label>
+                        <span class="property-description">Allow players to fly in survival mode</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="allow-flight">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- World Settings -->
+        <div class="card properties-section">
+            <div class="card-header">
+                <h3><i class="fas fa-globe"></i> World Settings</h3>
+            </div>
+            <div class="card-body">
+
+                <!-- Level Name -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>World Name</label>
+                        <span class="property-description">Name of the world folder</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="text" name="level-name" class="form-control" value="world">
+                    </div>
+                </div>
+
+                <!-- Level Seed -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>World Seed</label>
+                        <span class="property-description">Seed for world generation (leave empty for random)</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="text" name="level-seed" class="form-control" placeholder="Leave empty for random seed">
+                    </div>
+                </div>
+
+                <!-- Level Type -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>World Type</label>
+                        <span class="property-description">Type of world generation</span>
+                    </div>
+                    <div class="property-control">
+                        <select name="level-type" class="form-control">
+                            <option value="minecraft:normal">Normal</option>
+                            <option value="minecraft:flat">Flat/Superflat</option>
+                            <option value="minecraft:large_biomes">Large Biomes</option>
+                            <option value="minecraft:amplified">Amplified</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Generate Structures -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Generate Structures</label>
+                        <span class="property-description">Generate villages, dungeons, etc.</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="generate-structures" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Spawn Animals -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Spawn Animals</label>
+                        <span class="property-description">Allow animals to spawn naturally</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="spawn-animals" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Spawn Monsters -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Spawn Monsters</label>
+                        <span class="property-description">Allow monsters to spawn naturally</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="spawn-monsters" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Performance Settings -->
+        <div class="card properties-section">
+            <div class="card-header">
+                <h3><i class="fas fa-tachometer-alt"></i> Performance Settings</h3>
+            </div>
+            <div class="card-body">
+
+                <!-- View Distance -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>View Distance</label>
+                        <span class="property-description">How far players can see (3-32 chunks)</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="range" name="view-distance" class="range-slider" min="3" max="32" value="10">
+                        <span class="range-value">10 chunks</span>
+                    </div>
+                </div>
+
+                <!-- Simulation Distance -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Simulation Distance</label>
+                        <span class="property-description">Distance for mob spawning and block updates</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="range" name="simulation-distance" class="range-slider" min="3" max="32" value="10">
+                        <span class="range-value">10 chunks</span>
+                    </div>
+                </div>
+
+                <!-- Max Tick Time -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Max Tick Time</label>
+                        <span class="property-description">Maximum time per tick in milliseconds</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="number" name="max-tick-time" class="form-control" value="60000" min="1000">
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Security Settings -->
+        <div class="card properties-section">
+            <div class="card-header">
+                <h3><i class="fas fa-shield-alt"></i> Security Settings</h3>
+            </div>
+            <div class="card-body">
+
+                <!-- Online Mode -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Online Mode</label>
+                        <span class="property-description">Verify player accounts with Mojang servers</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="online-mode" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- White List -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Whitelist</label>
+                        <span class="property-description">Only allow whitelisted players to join</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="white-list">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Enforce Whitelist -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Enforce Whitelist</label>
+                        <span class="property-description">Kick non-whitelisted players immediately</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="enforce-whitelist">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Spawn Protection -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Spawn Protection Radius</label>
+                        <span class="property-description">Radius around spawn where only ops can build</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="number" name="spawn-protection" class="form-control" value="16" min="0">
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Advanced Settings -->
+        <div class="card properties-section">
+            <div class="card-header">
+                <h3><i class="fas fa-cog"></i> Advanced Settings</h3>
+            </div>
+            <div class="card-body">
+
+                <!-- Enable Command Block -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Enable Command Blocks</label>
+                        <span class="property-description">Allow command blocks to function</span>
+                    </div>
+                    <div class="property-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="enable-command-block">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Function Permission Level -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Function Permission Level</label>
+                        <span class="property-description">Permission level for functions</span>
+                    </div>
+                    <div class="property-control">
+                        <select name="function-permission-level" class="form-control">
+                            <option value="1">1 - Moderator</option>
+                            <option value="2">2 - Gamemaster</option>
+                            <option value="3">3 - Admin</option>
+                            <option value="4">4 - Owner</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Op Permission Level -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Op Permission Level</label>
+                        <span class="property-description">Default permission level for ops</span>
+                    </div>
+                    <div class="property-control">
+                        <select name="op-permission-level" class="form-control">
+                            <option value="1">1 - Moderator</option>
+                            <option value="2">2 - Gamemaster</option>
+                            <option value="3">3 - Admin</option>
+                            <option value="4">4 - Owner</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Resource Pack -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Resource Pack URL</label>
+                        <span class="property-description">URL to server resource pack</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="url" name="resource-pack" class="form-control" placeholder="https://example.com/resourcepack.zip">
+                    </div>
+                </div>
+
+                <!-- Resource Pack SHA1 -->
+                <div class="property-item">
+                    <div class="property-label">
+                        <label>Resource Pack SHA1</label>
+                        <span class="property-description">SHA1 hash of the resource pack</span>
+                    </div>
+                    <div class="property-control">
+                        <input type="text" name="resource-pack-sha1" class="form-control" placeholder="Optional SHA1 hash">
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</form>
+
+<!-- Custom CSS for Properties Editor -->
+<style>
+/* Enhanced Header Styling */
+.dynamic-badge {
+    background: linear-gradient(45deg, #2563eb, #3b82f6);
+    color: white;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    margin-left: 12px;
+    animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(37, 99, 235, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(37, 99, 235, 0.8); }
+}
+
+.breadcrumb-info {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-left: 16px;
+    padding: 4px 8px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+}
+
+/* Enhanced Protection Notice */
+.protection-notice {
+    margin-bottom: 20px;
+    border-left: 4px solid #2563eb;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(59, 130, 246, 0.02));
+}
+
+.protection-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+}
+
+.protection-icon {
+    flex-shrink: 0;
+}
+
+.protection-icon i {
+    color: #2563eb;
+    font-size: 24px;
+    animation: shield-pulse 3s infinite;
+}
+
+@keyframes shield-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.protection-text {
+    flex: 1;
+}
+
+.protection-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    font-size: 15px;
+}
+
+.protection-description {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.protection-status {
+    flex-shrink: 0;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.protected {
+    background: linear-gradient(45deg, #dc3545, #e74c3c);
+    color: white;
+    animation: protected-glow 2s infinite;
+}
+
+@keyframes protected-glow {
+    0%, 100% { box-shadow: 0 0 8px rgba(220, 53, 69, 0.3); }
+    50% { box-shadow: 0 0 16px rgba(220, 53, 69, 0.6); }
+}
+
+.properties-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.properties-section {
+    height: fit-content;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.properties-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.property-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s ease;
+}
+
+.property-item:hover {
+    background-color: rgba(37, 99, 235, 0.02);
+    border-radius: 8px;
+    margin: 0 -8px;
+    padding: 16px 8px;
+}
+
+.property-item:last-child {
+    border-bottom: none;
+}
+
+.property-label {
+    flex: 1;
+    min-width: 0;
+}
+
+.property-label label {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    display: block;
+    cursor: pointer;
+}
+
+.property-description {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.property-control {
+    flex: 0 0 200px;
+    position: relative;
+}
+
+.property-control input,
+.property-control select {
+    width: 100%;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.property-control input:focus,
+.property-control select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.property-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--primary);
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+    z-index: 10;
+}
+
+.property-badge.protected {
+    background: linear-gradient(45deg, #dc3545, #e74c3c);
+    animation: badge-pulse 2s infinite;
+}
+
+@keyframes badge-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Enhanced Toggle Switch Styles */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 54px;
+    height: 28px;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, #ccc, #ddd);
+    transition: 0.3s;
+    border-radius: 28px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+input:checked + .toggle-slider {
+    background: linear-gradient(45deg, var(--primary), #3b82f6);
+    box-shadow: 0 0 10px rgba(37, 99, 235, 0.3);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+.toggle-slider:hover {
+    box-shadow: 0 0 8px rgba(37, 99, 235, 0.2);
+}
+
+/* Enhanced Range Slider Styles */
+.range-slider {
+    width: 100%;
+    margin-bottom: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, var(--primary) 0%, var(--primary) 50%, #ddd 50%, #ddd 100%);
+    outline: none;
+    transition: background 0.2s ease;
+}
+
+.range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.range-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.5);
+}
+
+.range-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+.range-value {
+    font-size: 12px;
+    color: var(--primary);
+    text-align: center;
+    display: block;
+    font-weight: 600;
+    background: rgba(37, 99, 235, 0.1);
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .properties-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .property-item {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .property-control {
+        flex: 1;
+        width: 100%;
+    }
+    
+    .page-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .protection-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
+}
+
+/* Loading State */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid var(--primary);
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Success Animation */
+@keyframes success-pulse {
+    0% { background-color: var(--success); transform: scale(1); }
+    50% { background-color: #28a745; transform: scale(1.05); }
+    100% { background-color: var(--primary); transform: scale(1); }
+}
+
+.save-success {
+    animation: success-pulse 0.6s ease;
+}
+
+/* Enhanced Card Headers */
+.card-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.card-header h3 i {
+    color: var(--primary);
+}
+
+/* Improved Form Controls */
+.form-control {
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    outline: none;
+}
+
+.form-control:disabled {
+    background: rgba(108, 117, 125, 0.1);
+    border-color: rgba(108, 117, 125, 0.2);
+    cursor: not-allowed;
+}
+
+/* Enhanced Buttons */
+.btn {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 10px 16px;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, var(--primary), #3b82f6);
+    color: white;
+}
+
+.btn-secondary {
+    background: linear-gradient(45deg, #6c757d, #868e96);
+    color: white;
+}
+
+.btn-success {
+    background: linear-gradient(45deg, var(--success), #28a745);
+    color: white;
+}
+</style>
+
+<script>
+let currentProperties = {};
+const serverId = '<%= server.id %>';
+
+// Open text editor for server.properties
+function openTextEditor() {
+    window.location.href = `/servers/${serverId}/files/view?path=server.properties`;
+}
+
+// Load properties on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadProperties();
+    setupRangeSliders();
+    setupFormValidation();
+    showWelcomeMessage();
+});
+
+// Show welcome message
+function showWelcomeMessage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('from') === 'filemanager') {
+        showToast('info', '🎉 Welcome to the Dynamic Properties Editor! This is much better than editing raw text files.');
+    }
+}
+
+// Setup form validation
+function setupFormValidation() {
+    const form = document.getElementById('propertiesForm');
+    const inputs = form.querySelectorAll('input, select');
+    
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            validateInput(this);
+        });
+        
+        input.addEventListener('input', function() {
+            if (this.type === 'range') {
+                updateRangeValue(this);
+            }
+        });
+    });
+}
+
+// Validate individual input
+function validateInput(input) {
+    const value = input.value;
+    let isValid = true;
+    let message = '';
+    
+    // Validate based on input type and name
+    if (input.name === 'max-players') {
+        if (value < 1 || value > 1000) {
+            isValid = false;
+            message = 'Max players must be between 1 and 1000';
+        }
+    } else if (input.name === 'view-distance' || input.name === 'simulation-distance') {
+        if (value < 3 || value > 32) {
+            isValid = false;
+            message = 'Distance must be between 3 and 32 chunks';
+        }
+    } else if (input.name === 'spawn-protection') {
+        if (value < 0 || value > 100) {
+            isValid = false;
+            message = 'Spawn protection must be between 0 and 100 blocks';
+        }
+    } else if (input.name === 'max-tick-time') {
+        if (value < 1000) {
+            isValid = false;
+            message = 'Max tick time must be at least 1000ms';
+        }
+    }
+    
+    // Visual feedback
+    if (isValid) {
+        input.style.borderColor = '';
+        input.style.boxShadow = '';
+        removeErrorMessage(input);
+    } else {
+        input.style.borderColor = '#dc3545';
+        input.style.boxShadow = '0 0 0 3px rgba(220, 53, 69, 0.1)';
+        showErrorMessage(input, message);
+    }
+    
+    return isValid;
+}
+
+// Show error message for input
+function showErrorMessage(input, message) {
+    removeErrorMessage(input);
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'input-error-message';
+    errorDiv.style.cssText = `
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 4px;
+        animation: fadeIn 0.3s ease;
+    `;
+    errorDiv.textContent = message;
+    
+    input.parentNode.appendChild(errorDiv);
+}
+
+// Remove error message
+function removeErrorMessage(input) {
+    const existing = input.parentNode.querySelector('.input-error-message');
+    if (existing) {
+        existing.remove();
+    }
+}
+
+// Load current server properties
+async function loadProperties() {
+    try {
+        const response = await fetch(`/servers/${serverId}/properties/get`);
+        const data = await response.json();
+        
+        if (data.success) {
+            currentProperties = data.properties;
+            populateForm(data.properties);
+        } else {
+            showToast('error', 'Failed to load properties: ' + (data.error || 'Unknown error'));
+        }
+    } catch (err) {
+        console.error('Error loading properties:', err);
+        showToast('error', 'Failed to load properties');
+    }
+}
+
+// Populate form with properties
+function populateForm(properties) {
+    const form = document.getElementById('propertiesForm');
+    
+    Object.entries(properties).forEach(([key, value]) => {
+        const input = form.querySelector(`[name="${key}"]`);
+        if (input) {
+            if (input.type === 'checkbox') {
+                input.checked = value === 'true' || value === true;
+            } else if (input.type === 'range') {
+                input.value = value;
+                updateRangeValue(input);
+            } else {
+                input.value = value;
+            }
+        }
+    });
+}
+
+// Setup range sliders
+function setupRangeSliders() {
+    document.querySelectorAll('.range-slider').forEach(slider => {
+        slider.addEventListener('input', function() {
+            updateRangeValue(this);
+        });
+        updateRangeValue(slider);
+    });
+}
+
+// Update range slider display value
+function updateRangeValue(slider) {
+    const valueSpan = slider.nextElementSibling;
+    if (valueSpan && valueSpan.classList.contains('range-value')) {
+        const unit = slider.name.includes('distance') ? ' chunks' : '';
+        valueSpan.textContent = slider.value + unit;
+    }
+}
+
+// Save properties with enhanced validation
+async function saveProperties() {
+    const form = document.getElementById('propertiesForm');
+    const formData = new FormData(form);
+    const properties = {};
+    
+    // Validate all inputs first
+    const inputs = form.querySelectorAll('input, select');
+    let hasErrors = false;
+    
+    inputs.forEach(input => {
+        if (!validateInput(input)) {
+            hasErrors = true;
+        }
+    });
+    
+    if (hasErrors) {
+        showToast('error', '❌ Please fix the validation errors before saving');
+        return;
+    }
+    
+    // Convert form data to properties object
+    for (let [key, value] of formData.entries()) {
+        properties[key] = value;
+    }
+    
+    // Handle checkboxes (unchecked boxes don't appear in FormData)
+    form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        properties[checkbox.name] = checkbox.checked ? 'true' : 'false';
+    });
+    
+    // Show enhanced loading state
+    const saveBtn = document.querySelector('.btn-primary');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving Properties...';
+    saveBtn.disabled = true;
+    
+    // Add loading class to form
+    form.classList.add('loading');
+    
+    try {
+        const response = await fetch(`/servers/${serverId}/properties/save`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ properties })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('success', '✅ Properties saved successfully! Your server configuration has been updated.');
+            saveBtn.classList.add('save-success');
+            
+            // Show warning if port was protected
+            if (data.warning) {
+                setTimeout(() => {
+                    showToast('warning', '🔒 ' + data.warning);
+                }, 1000);
+            }
+            
+            // Add success animation to form
+            form.style.animation = 'success-flash 0.5s ease';
+            
+            setTimeout(() => {
+                saveBtn.classList.remove('save-success');
+                form.style.animation = '';
+            }, 600);
+        } else {
+            showToast('error', '❌ Failed to save properties: ' + (data.error || 'Unknown error'));
+        }
+    } catch (err) {
+        console.error('Error saving properties:', err);
+        showToast('error', '❌ Network error: Failed to save properties. Please check your connection.');
+    } finally {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+        form.classList.remove('loading');
+    }
+}
+
+// Reset to defaults
+async function resetToDefaults() {
+    if (!confirm('Are you sure you want to reset all properties to default values? This cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/servers/${serverId}/properties/reset`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('success', 'Properties reset to defaults!');
+            loadProperties(); // Reload the form
+        } else {
+            showToast('error', 'Failed to reset properties: ' + (data.error || 'Unknown error'));
+        }
+    } catch (err) {
+        console.error('Error resetting properties:', err);
+        showToast('error', 'Failed to reset properties');
+    }
+}
+
+// Enhanced toast notification system
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    
+    let bgColor, icon;
+    if (type === 'success') {
+        bgColor = 'linear-gradient(45deg, #28a745, #34ce57)';
+        icon = 'fas fa-check-circle';
+    } else if (type === 'error') {
+        bgColor = 'linear-gradient(45deg, #dc3545, #e74c3c)';
+        icon = 'fas fa-exclamation-circle';
+    } else if (type === 'warning') {
+        bgColor = 'linear-gradient(45deg, #ffc107, #ffcd39)';
+        icon = 'fas fa-exclamation-triangle';
+    } else {
+        bgColor = 'linear-gradient(45deg, var(--primary), #3b82f6)';
+        icon = 'fas fa-info-circle';
+    }
+    
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${bgColor};
+        color: white;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        z-index: 10001;
+        max-width: 400px;
+        font-size: 14px;
+        font-weight: 500;
+        animation: slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        backdrop-filter: blur(10px);
+    `;
+    
+    toast.innerHTML = `
+        <i class="${icon}" style="font-size: 18px;"></i>
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()" style="
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: auto;
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+        " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.animation = 'slideOutRight 0.4s ease';
+            setTimeout(() => toast.remove(), 400);
+        }
+    }, 5000);
+}
+
+// Add enhanced CSS animations
+const enhancedStyle = document.createElement('style');
+enhancedStyle.textContent = `
+    @keyframes slideInRight {
+        from { 
+            transform: translateX(400px) scale(0.8); 
+            opacity: 0; 
+        }
+        to { 
+            transform: translateX(0) scale(1); 
+            opacity: 1; 
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from { 
+            transform: translateX(0) scale(1); 
+            opacity: 1; 
+        }
+        to { 
+            transform: translateX(400px) scale(0.8); 
+            opacity: 0; 
+        }
+    }
+    
+    @keyframes success-flash {
+        0%, 100% { background-color: transparent; }
+        50% { background-color: rgba(40, 167, 69, 0.1); }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+`;
+document.head.appendChild(enhancedStyle);
+</script>
+
+<%- include('../partials/footer') %>

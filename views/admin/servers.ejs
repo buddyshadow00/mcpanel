@@ -1,0 +1,515 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-server"></i>
+            Server Management
+        </h1>
+        <p class="page-subtitle">Manage all panel servers</p>
+    </div>
+    <a href="/admin/servers/create" class="btn btn-primary">
+        <i class="fas fa-plus"></i>
+        Create Server
+    </a>
+</div>
+
+<!-- Stats Cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white;">
+        <div class="stat-content">
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 13px;">Total Servers</div>
+            <div class="stat-value" style="color: white; font-size: 28px;"><%= servers.length %></div>
+        </div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border: none; color: white;">
+        <div class="stat-content">
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 13px;">Running</div>
+            <div class="stat-value" style="color: white; font-size: 28px;"><%= servers.filter(s => s.status === 'running').length %></div>
+        </div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%); border: none; color: white;">
+        <div class="stat-content">
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 13px;">Stopped</div>
+            <div class="stat-value" style="color: white; font-size: 28px;"><%= servers.filter(s => s.status === 'stopped').length %></div>
+        </div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border: none; color: white;">
+        <div class="stat-content">
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 13px;">Total RAM</div>
+            <div class="stat-value" style="color: white; font-size: 28px;"><%= servers.reduce((acc, s) => acc + (s.ram || 0), 0) %> MB</div>
+        </div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border: none; color: white;">
+        <div class="stat-content">
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 13px;">Total CPU</div>
+            <div class="stat-value" style="color: white; font-size: 28px;"><%= servers.reduce((acc, s) => acc + (s.cpu || 2), 0) %> Cores</div>
+        </div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border: none; color: white;">
+        <div class="stat-content">
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 13px;">Total Disk</div>
+            <div class="stat-value" style="color: white; font-size: 28px;"><%= (servers.reduce((acc, s) => acc + (s.disk || 10240), 0) / 1024).toFixed(0) %> GB</div>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-body">
+        <form method="GET" action="/admin/servers" style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <div class="input-wrapper" style="flex: 1; min-width: 250px;">
+                <input type="text" name="search" class="form-control" placeholder="Search by server name or owner..." value="<%= search || '' %>">
+                <i class="fas fa-search input-icon"></i>
+            </div>
+            <select name="type" class="form-control" style="width: 150px;" onchange="this.form.submit()">
+                <option value="">All Types</option>
+                <option value="vanilla" <%= (typeof type !== 'undefined' && type === 'vanilla') ? 'selected' : '' %>>Vanilla</option>
+                <option value="paper" <%= (typeof type !== 'undefined' && type === 'paper') ? 'selected' : '' %>>Paper</option>
+                <option value="purpur" <%= (typeof type !== 'undefined' && type === 'purpur') ? 'selected' : '' %>>Purpur</option>
+                <option value="spigot" <%= (typeof type !== 'undefined' && type === 'spigot') ? 'selected' : '' %>>Spigot</option>
+                <option value="fabric" <%= (typeof type !== 'undefined' && type === 'fabric') ? 'selected' : '' %>>Fabric</option>
+                <option value="forge" <%= (typeof type !== 'undefined' && type === 'forge') ? 'selected' : '' %>>Forge</option>
+                <option value="velocity" <%= (typeof type !== 'undefined' && type === 'velocity') ? 'selected' : '' %>>Velocity</option>
+                <option value="bungeecord" <%= (typeof type !== 'undefined' && type === 'bungeecord') ? 'selected' : '' %>>BungeeCord</option>
+                <option value="waterfall" <%= (typeof type !== 'undefined' && type === 'waterfall') ? 'selected' : '' %>>Waterfall</option>
+                <option value="bedrock" <%= (typeof type !== 'undefined' && type === 'bedrock') ? 'selected' : '' %>>Bedrock</option>
+            </select>
+            <select name="status" class="form-control" style="width: 150px;" onchange="this.form.submit()">
+                <option value="">All Status</option>
+                <option value="running" <%= (typeof status !== 'undefined' && status === 'running') ? 'selected' : '' %>>Running</option>
+                <option value="stopped" <%= (typeof status !== 'undefined' && status === 'stopped') ? 'selected' : '' %>>Stopped</option>
+            </select>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+            <% if (search || (typeof type !== 'undefined' && type) || (typeof status !== 'undefined' && status)) { %>
+                <a href="/admin/servers" class="btn btn-secondary">
+                    <i class="fas fa-times"></i>
+                    Clear
+                </a>
+            <% } %>
+        </form>
+    </div>
+</div>
+
+<!-- Servers Table -->
+<div class="card">
+    <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
+        <h3 style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-server" style="color: var(--accent-primary);"></i>
+            All Servers
+            <span class="badge badge-info"><%= servers.length %></span>
+        </h3>
+        <div style="display: flex; gap: 8px;">
+            <button class="btn btn-sm btn-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i>
+                Refresh
+            </button>
+        </div>
+    </div>
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">ID</th>
+                    <th>Server</th>
+                    <th>Owner</th>
+                    <th style="width: 120px;">Type</th>
+                    <th style="width: 100px;">Version</th>
+                    <th style="width: 120px;">Status</th>
+                    <th style="width: 100px;">Port</th>
+                    <th style="width: 180px;">Resources</th>
+                    <th style="width: 140px;">Created</th>
+                    <th style="width: 160px; text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (servers.length === 0) { %>
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 48px; color: var(--text-muted);">
+                            <i class="fas fa-server" style="font-size: 64px; opacity: 0.2; margin-bottom: 16px; display: block;"></i>
+                            <div style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">No servers found</div>
+                            <div style="font-size: 14px;">Try adjusting your search filters</div>
+                        </td>
+                    </tr>
+                <% } else { %>
+                    <% servers.forEach(s => { %>
+                        <tr style="transition: background 0.2s;">
+                            <td style="color: var(--text-muted); font-family: monospace;">#<%= s.id %></td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px; flex-shrink: 0;">
+                                        <i class="fas fa-server"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 600; color: var(--text-primary);"><%= s.name %></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="color: var(--text-secondary);"><%= s.owner_name || 'Unknown' %></td>
+                            <td>
+                                <span class="badge badge-info">
+                                    <%= s.server_type || 'vanilla' %>
+                                </span>
+                            </td>
+                            <td style="color: var(--text-secondary); font-size: 13px;"><%= s.version || 'Latest' %></td>
+                            <td>
+                                <span class="badge <%= s.status === 'running' ? 'badge-success' : 'badge-danger' %>">
+                                    <i class="fas fa-circle" style="font-size: 8px;"></i>
+                                    <%= s.status %>
+                                </span>
+                            </td>
+                            <td style="color: var(--text-secondary); font-family: monospace;"><%= s.port %></td>
+                            <td>
+                                <div style="display: flex; flex-direction: column; gap: 4px; font-size: 12px;">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-memory" style="color: var(--warning); width: 14px;"></i>
+                                        <span style="color: var(--text-secondary);">RAM:</span>
+                                        <span style="font-weight: 600; color: var(--text-primary);"><%= s.ram %> MB</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-microchip" style="color: var(--info); width: 14px;"></i>
+                                        <span style="color: var(--text-secondary);">CPU:</span>
+                                        <span style="font-weight: 600; color: var(--text-primary);"><%= s.cpu || 2 %> Cores</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-hdd" style="color: var(--success); width: 14px;"></i>
+                                        <span style="color: var(--text-secondary);">Disk:</span>
+                                        <span style="font-weight: 600; color: var(--text-primary);"><%= ((s.disk || 10240) / 1024).toFixed(1) %> GB</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="color: var(--text-secondary); font-size: 13px;">
+                                <i class="fas fa-calendar"></i>
+                                <%= new Date(s.created_at).toLocaleDateString() %>
+                            </td>
+                            <td style="text-align: center;">
+                                <div style="display: flex; gap: 6px; justify-content: center;">
+                                    <a href="/servers/<%= s.id %>/dashboard" class="btn-icon btn-secondary" title="View Dashboard">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="/admin/servers/<%= s.id %>/edit" class="btn-icon btn-secondary" title="Edit Server">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn-icon <%= s.status === 'running' ? 'btn-danger' : 'btn-success' %>" 
+                                            onclick="toggleServer(<%= s.id %>, '<%= s.status %>')" 
+                                            title="<%= s.status === 'running' ? 'Stop' : 'Start' %>">
+                                        <i class="fas fa-<%= s.status === 'running' ? 'stop' : 'play' %>"></i>
+                                    </button>
+                                    <button class="btn-icon btn-danger delete-server-btn" 
+                                            data-server-id="<%= s.id %>" 
+                                            data-server-name="<%= s.name %>" 
+                                            title="Delete Server">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    <% }) %>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<!-- Delete Confirmation Modal -->
+<div class="modal" id="deleteModal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">
+            <h2 style="margin: 0; display: flex; align-items: center; gap: 12px;">
+                <i class="fas fa-exclamation-triangle"></i>
+                Delete Server
+            </h2>
+            <button class="modal-close" onclick="closeDeleteModal()" style="color: white;">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                <div style="font-weight: 600; color: #dc2626; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    Warning: This action cannot be undone!
+                </div>
+                <div style="font-size: 14px; color: var(--text-secondary);">
+                    This will permanently delete:
+                </div>
+                <ul style="margin: 12px 0 0 0; padding-left: 24px; color: var(--text-secondary); font-size: 14px;">
+                    <li>All server files and configurations</li>
+                    <li>All backups associated with this server</li>
+                    <li>All worlds, plugins, and data</li>
+                </ul>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <div style="font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
+                    Server to delete:
+                </div>
+                <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-server" style="color: #ef4444;"></i>
+                    <span id="deleteServerName"></span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="font-weight: 600; margin-bottom: 8px; display: block; color: var(--text-primary);">
+                    Type the server name to confirm:
+                </label>
+                <input type="text" id="confirmServerName" class="form-control" placeholder="Enter server name" style="border: 2px solid var(--border-primary);">
+                <span id="confirmError" style="color: #ef4444; font-size: 13px; margin-top: 4px; display: none;">
+                    <i class="fas fa-times-circle"></i>
+                    Server name does not match
+                </span>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()">
+                    <i class="fas fa-trash"></i>
+                    Delete Server
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    overflow-y: auto;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);t
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: auto;
+    animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 32px;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOutRight {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+
+tr:hover {
+    background: var(--bg-hover) !important;
+}
+</style>
+
+<script>
+function toggleServer(serverId, currentStatus) {
+    const action = currentStatus === 'running' ? 'stop' : 'start';
+    
+    if (!confirm(`Are you sure you want to ${action} this server?`)) {
+        return;
+    }
+
+    const btn = event.target.closest('button');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    fetch(`/servers/${serverId}/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`Server ${action}ed successfully!`, 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Error: ' + (data.error || `Failed to ${action} server`), 'error');
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fas fa-${action === 'start' ? 'play' : 'stop'}"></i>`;
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showToast('An error occurred', 'error');
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fas fa-${action === 'start' ? 'play' : 'stop'}"></i>`;
+    });
+}
+
+let deleteServerId = null;
+let deleteServerName = null;
+
+function showDeleteModal(serverId, serverName) {
+    console.log('Show delete modal:', serverId, serverName);
+    deleteServerId = serverId;
+    deleteServerName = serverName;
+    
+    document.getElementById('deleteServerName').textContent = serverName;
+    document.getElementById('confirmServerName').value = '';
+    document.getElementById('confirmError').style.display = 'none';
+    document.getElementById('deleteModal').style.display = 'flex';
+    
+    setTimeout(() => {
+        document.getElementById('confirmServerName').focus();
+    }, 100);
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+    deleteServerId = null;
+    deleteServerName = null;
+}
+
+function confirmDelete() {
+    const confirmInput = document.getElementById('confirmServerName').value;
+    const confirmError = document.getElementById('confirmError');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    
+    console.log('Confirm delete:', confirmInput, 'Expected:', deleteServerName);
+    
+    if (confirmInput !== deleteServerName) {
+        confirmError.style.display = 'block';
+        document.getElementById('confirmServerName').style.borderColor = '#ef4444';
+        return;
+    }
+    
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+    
+    console.log('Creating form to delete server:', deleteServerId);
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/admin/servers/${deleteServerId}/delete`;
+    document.body.appendChild(form);
+    
+    console.log('Submitting form to:', form.action);
+    form.submit();
+}
+
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('deleteModal');
+    if (e.target === modal) {
+        closeDeleteModal();
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('deleteModal');
+        if (modal && modal.style.display === 'flex') {
+            closeDeleteModal();
+        }
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing delete buttons...');
+    
+    const confirmInput = document.getElementById('confirmServerName');
+    if (confirmInput) {
+        confirmInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                confirmDelete();
+            }
+        });
+        
+        confirmInput.addEventListener('input', function() {
+            document.getElementById('confirmError').style.display = 'none';
+            this.style.borderColor = '';
+        });
+    }
+    
+    const deleteButtons = document.querySelectorAll('.delete-server-btn');
+    console.log('Found delete buttons:', deleteButtons.length);
+    
+    deleteButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const serverId = this.dataset.serverId;
+            const serverName = this.dataset.serverName;
+            console.log('Delete button clicked:', serverId, serverName);
+            showDeleteModal(serverId, serverName);
+        });
+    });
+});
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type}`;
+    toast.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; animation: slideInRight 0.3s ease; min-width: 300px;';
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+</script>
+
+<%- include('../partials/footer') %>

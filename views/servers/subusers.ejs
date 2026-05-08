@@ -1,0 +1,640 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-user-friends"></i>
+            Subuser Management
+        </h1>
+        <p class="page-subtitle"><%= server.name %></p>
+    </div>
+    <button class="btn btn-primary" onclick="showAddModal()">
+        <i class="fas fa-plus"></i>
+        Add Subuser
+    </button>
+</div>
+
+<!-- Current Subusers -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-users"></i> Current Subusers</h3>
+        <span class="badge badge-primary"><%= subusers ? subusers.length : 0 %> Users</span>
+    </div>
+    <div class="card-body">
+        <% if (subusers && subusers.length > 0) { %>
+            <div class="subusers-grid">
+                <% subusers.forEach(subuser => { %>
+                    <div class="subuser-card">
+                        <div class="subuser-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="subuser-info">
+                            <h4 class="subuser-name"><%= subuser.username %></h4>
+                            <p class="subuser-meta">
+                                <i class="fas fa-id-badge"></i>
+                                User ID: <%= subuser.user_id %>
+                            </p>
+                        </div>
+                        <div class="subuser-actions">
+                            <button class="btn btn-sm btn-danger" onclick="removeSubuser(<%= subuser.id %>, '<%= subuser.username %>')" title="Remove Subuser">
+                                <i class="fas fa-trash"></i>
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+        <% } else { %>
+            <div class="empty-state">
+                <i class="fas fa-user-friends"></i>
+                <h3>No Subusers Yet</h3>
+                <p>Add subusers to give other users access to manage this server</p>
+                <button class="btn btn-primary" onclick="showAddModal()">
+                    <i class="fas fa-plus"></i>
+                    Add First Subuser
+                </button>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<!-- Permissions Information -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-info-circle"></i> About Subusers</h3>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info">
+            <i class="fas fa-shield-alt"></i>
+            <span>
+                <strong>What are subusers?</strong> Subusers are additional users who can access and manage this server. They have the same permissions as the owner, except they cannot delete the server or manage other subusers.
+            </span>
+        </div>
+
+        <div class="permissions-info-grid">
+            <div class="permission-info-card">
+                <div class="permission-icon" style="background: rgba(59, 130, 246, 0.1);">
+                    <i class="fas fa-terminal" style="color: #3b82f6;"></i>
+                </div>
+                <div class="permission-content">
+                    <h4>Console Access</h4>
+                    <p>View server console and send commands</p>
+                </div>
+            </div>
+
+            <div class="permission-info-card">
+                <div class="permission-icon" style="background: rgba(16, 185, 129, 0.1);">
+                    <i class="fas fa-folder-open" style="color: #10b981;"></i>
+                </div>
+                <div class="permission-content">
+                    <h4>File Management</h4>
+                    <p>Upload, edit, and delete server files</p>
+                </div>
+            </div>
+
+            <div class="permission-info-card">
+                <div class="permission-icon" style="background: rgba(245, 158, 11, 0.1);">
+                    <i class="fas fa-power-off" style="color: #f59e0b;"></i>
+                </div>
+                <div class="permission-content">
+                    <h4>Server Control</h4>
+                    <p>Start, stop, and restart the server</p>
+                </div>
+            </div>
+
+            <div class="permission-info-card">
+                <div class="permission-icon" style="background: rgba(139, 92, 246, 0.1);">
+                    <i class="fas fa-database" style="color: #8b5cf6;"></i>
+                </div>
+                <div class="permission-content">
+                    <h4>Backup Access</h4>
+                    <p>Create and restore server backups</p>
+                </div>
+            </div>
+
+            <div class="permission-info-card">
+                <div class="permission-icon" style="background: rgba(236, 72, 153, 0.1);">
+                    <i class="fas fa-users" style="color: #ec4899;"></i>
+                </div>
+                <div class="permission-content">
+                    <h4>Player Management</h4>
+                    <p>Manage players, whitelist, and bans</p>
+                </div>
+            </div>
+
+            <div class="permission-info-card">
+                <div class="permission-icon" style="background: rgba(239, 68, 68, 0.1);">
+                    <i class="fas fa-cog" style="color: #ef4444;"></i>
+                </div>
+                <div class="permission-content">
+                    <h4>Server Settings</h4>
+                    <p>Modify server configuration and properties</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-warning" style="margin-top: 20px;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>
+                <strong>Security Note:</strong> Only add users you trust. Subusers have significant control over your server and can make changes that affect gameplay and server stability.
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Add Subuser Modal -->
+<div id="addModal" class="modal" style="display: none;">
+    <div class="modal-overlay" onclick="closeAddModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-plus"></i> Add Subuser</h3>
+            <button class="btn-icon btn-secondary" onclick="closeAddModal()" type="button">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="addSubuserForm" onsubmit="addSubuser(event)">
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-user"></i>
+                        Username
+                    </label>
+                    <input type="text" name="username" id="usernameInput" class="form-control" placeholder="Enter username" required autocomplete="off">
+                    <small class="help-text">
+                        <i class="fas fa-info-circle"></i>
+                        User must have an existing account on this panel
+                    </small>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="fas fa-lightbulb"></i>
+                    <span>
+                        The user will be notified and can immediately access this server from their dashboard.
+                    </span>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddModal()">
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="addSubuserBtn">
+                        <i class="fas fa-plus"></i>
+                        Add Subuser
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+
+<style>
+/* Subusers Grid */
+.subusers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+/* Subuser Card */
+.subuser-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 12px;
+    transition: all var(--transition-fast);
+}
+
+.subuser-card:hover {
+    background: var(--bg-elevated);
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.subuser-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.subuser-avatar i {
+    font-size: 24px;
+    color: white;
+}
+
+.subuser-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.subuser-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 6px 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.subuser-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.subuser-meta i {
+    font-size: 12px;
+}
+
+.subuser-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-state i {
+    font-size: 64px;
+    color: var(--text-muted);
+    opacity: 0.3;
+    margin-bottom: 20px;
+}
+
+.empty-state h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.empty-state p {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0 0 24px 0;
+}
+
+/* Permissions Info Grid */
+.permissions-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.permission-info-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 10px;
+    transition: all var(--transition-fast);
+}
+
+.permission-info-card:hover {
+    background: var(--bg-elevated);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.permission-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.permission-icon i {
+    font-size: 20px;
+}
+
+.permission-content h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 4px 0;
+}
+
+.permission-content p {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    width: 500px;
+    max-width: 90%;
+    max-height: 90vh;
+    overflow: auto;
+    animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.modal-header h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-header h3 i {
+    color: var(--accent-primary);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+
+/* Animations */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(400px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOutRight {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(400px); opacity: 0; }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .subusers-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .permissions-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .subuser-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .subuser-actions {
+        width: 100%;
+    }
+
+    .subuser-actions .btn {
+        flex: 1;
+    }
+}
+</style>
+
+<script>
+const serverId = '<%= server.id %>';
+
+console.log('Subusers page loaded. Server ID:', serverId);
+
+function showAddModal() {
+    console.log('showAddModal called');
+    const modal = document.getElementById('addModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        
+        // Focus on input
+        setTimeout(() => {
+            const input = document.getElementById('usernameInput');
+            if (input) input.focus();
+        }, 100);
+    } else {
+        console.error('Modal not found!');
+    }
+}
+
+function closeAddModal() {
+    const modal = document.getElementById('addModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+        const form = document.getElementById('addSubuserForm');
+        if (form) form.reset();
+    }
+}
+
+async function addSubuser(e) {
+    e.preventDefault();
+    console.log('addSubuser called');
+    
+    const input = document.getElementById('usernameInput');
+    const username = input ? input.value.trim() : '';
+    
+    if (!username) {
+        showToast('error', '❌ Please enter a username');
+        return;
+    }
+    
+    const btn = document.getElementById('addSubuserBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch(`/servers/${serverId}/subusers/add`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username }),
+            redirect: 'manual'
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response type:', response.type);
+        
+        // Handle redirect (302)
+        if (response.type === 'opaqueredirect' || response.status === 0) {
+            showToast('success', '✅ Subuser added successfully!');
+            setTimeout(() => window.location.reload(), 1000);
+            return;
+        }
+        
+        // Handle JSON response
+        if (response.ok) {
+            showToast('success', '✅ Subuser added successfully!');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            const data = await response.json().catch(() => ({ error: 'Unknown error' }));
+            showToast('error', '❌ ' + (data.error || 'Failed to add subuser'));
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    } catch (err) {
+        console.error('Add subuser error:', err);
+        showToast('error', '❌ Network error: ' + err.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+async function removeSubuser(subuserId, username) {
+    if (!confirm(`Remove ${username} as a subuser?\n\nThey will immediately lose access to this server.`)) {
+        return;
+    }
+    
+    showToast('info', '🔄 Removing subuser...');
+    
+    try {
+        const response = await fetch(`/servers/${serverId}/subusers/remove`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ subuserId }),
+            redirect: 'manual'
+        });
+        
+        // Handle redirect
+        if (response.type === 'opaqueredirect' || response.status === 0) {
+            showToast('success', '✅ Subuser removed successfully!');
+            setTimeout(() => window.location.reload(), 1000);
+            return;
+        }
+        
+        if (response.ok) {
+            showToast('success', '✅ Subuser removed successfully!');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            const data = await response.json().catch(() => ({ error: 'Unknown error' }));
+            showToast('error', '❌ ' + (data.error || 'Failed to remove subuser'));
+        }
+    } catch (err) {
+        console.error('Remove subuser error:', err);
+        showToast('error', '❌ Network error: ' + err.message);
+    }
+}
+
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? 'linear-gradient(45deg, #10b981, #34ce57)' : 
+                     type === 'error' ? 'linear-gradient(45deg, #ef4444, #dc2626)' : 
+                     type === 'info' ? 'linear-gradient(45deg, #3b82f6, #60a5fa)' :
+                     'linear-gradient(45deg, #f59e0b, #fbbf24)'};
+        color: white;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        z-index: 10001;
+        max-width: 400px;
+        font-size: 14px;
+        font-weight: 500;
+        animation: slideInRight 0.4s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    `;
+    
+    const icon = type === 'success' ? 'check-circle' : 
+                 type === 'error' ? 'exclamation-circle' : 
+                 type === 'info' ? 'info-circle' :
+                 'exclamation-triangle';
+    
+    toast.innerHTML = `
+        <i class="fas fa-${icon}" style="font-size: 18px;"></i>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOutRight 0.4s ease';
+        setTimeout(() => toast.remove(), 400);
+    }, 5000);
+}
+
+// Close modal on ESC key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeAddModal();
+    }
+});
+
+// Test button on page load
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded');
+    const addBtn = document.querySelector('.btn-primary');
+    console.log('Add button found:', addBtn);
+});
+</script>

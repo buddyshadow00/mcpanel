@@ -1,0 +1,244 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-users-cog"></i>
+            User Management
+        </h1>
+        <p class="page-subtitle">Manage all panel users</p>
+    </div>
+    <a href="/admin/users/create" class="btn btn-primary">
+        <i class="fas fa-plus"></i>
+        Create User
+    </a>
+</div>
+
+<!-- Stats Cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white;">
+        <div class="stat-content">
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 13px;">Total Users</div>
+            <div class="stat-value" style="color: white; font-size: 28px;"><%= users.length %></div>
+        </div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border: none; color: white;">
+        <div class="stat-content">
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 13px;">Admins</div>
+            <div class="stat-value" style="color: white; font-size: 28px;"><%= users.filter(u => u.role === 'admin').length %></div>
+        </div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border: none; color: white;">
+        <div class="stat-content">
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 13px;">Regular Users</div>
+            <div class="stat-value" style="color: white; font-size: 28px;"><%= users.filter(u => u.role !== 'admin').length %></div>
+        </div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); border: none; color: white;">
+        <div class="stat-content">
+            <div class="stat-label" style="color: rgba(255, 255, 255, 0.9); font-size: 13px;">Active Users</div>
+            <div class="stat-value" style="color: white; font-size: 28px;"><%= users.filter(u => u.status === 'active' || !u.status).length %></div>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-body">
+        <form method="GET" action="/admin/users" style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <div class="input-wrapper" style="flex: 1; min-width: 250px;">
+                <input type="text" name="search" class="form-control" placeholder="Search by username or email..." value="<%= search || '' %>">
+                <i class="fas fa-search input-icon"></i>
+            </div>
+            <select name="role" class="form-control" style="width: 150px;" onchange="this.form.submit()">
+                <option value="">All Roles</option>
+                <option value="admin" <%= (typeof role !== 'undefined' && role === 'admin') ? 'selected' : '' %>>Admin</option>
+                <option value="user" <%= (typeof role !== 'undefined' && role === 'user') ? 'selected' : '' %>>User</option>
+            </select>
+            <select name="status" class="form-control" style="width: 150px;" onchange="this.form.submit()">
+                <option value="">All Status</option>
+                <option value="active" <%= (typeof status !== 'undefined' && status === 'active') ? 'selected' : '' %>>Active</option>
+                <option value="suspended" <%= (typeof status !== 'undefined' && status === 'suspended') ? 'selected' : '' %>>Suspended</option>
+            </select>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+            <% if (search || (typeof role !== 'undefined' && role) || (typeof status !== 'undefined' && status)) { %>
+                <a href="/admin/users" class="btn btn-secondary">
+                    <i class="fas fa-times"></i>
+                    Clear
+                </a>
+            <% } %>
+        </form>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="card">
+    <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
+        <h3 style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-users" style="color: var(--accent-primary);"></i>
+            All Users
+            <span class="badge badge-info"><%= users.length %></span>
+        </h3>
+        <div style="display: flex; gap: 8px;">
+            <button class="btn btn-sm btn-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i>
+                Refresh
+            </button>
+        </div>
+    </div>
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">ID</th>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th style="width: 120px;">Role</th>
+                    <th style="width: 120px;">Status</th>
+                    <th style="width: 140px;">Created</th>
+                    <th style="width: 140px; text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (users.length === 0) { %>
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 48px; color: var(--text-muted);">
+                            <i class="fas fa-users" style="font-size: 64px; opacity: 0.2; margin-bottom: 16px; display: block;"></i>
+                            <div style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">No users found</div>
+                            <div style="font-size: 14px;">Try adjusting your search filters</div>
+                        </td>
+                    </tr>
+                <% } else { %>
+                    <% users.forEach(u => { %>
+                        <tr style="transition: background 0.2s;">
+                            <td style="color: var(--text-muted); font-family: monospace;">#<%= u.id %></td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px; flex-shrink: 0;">
+                                        <%= u.username.charAt(0).toUpperCase() %>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 600; color: var(--text-primary);"><%= u.username %></div>
+                                        <% if (u.id === user.id) { %>
+                                            <span class="badge badge-info" style="font-size: 10px; padding: 2px 6px;">You</span>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="color: var(--text-secondary);"><%= u.email %></td>
+                            <td>
+                                <span class="badge <%= u.role === 'admin' ? 'badge-warning' : 'badge-info' %>">
+                                    <i class="fas <%= u.role === 'admin' ? 'fa-crown' : 'fa-user' %>"></i>
+                                    <%= u.role %>
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge <%= (u.status === 'active' || !u.status) ? 'badge-success' : 'badge-danger' %>">
+                                    <i class="fas fa-circle" style="font-size: 8px;"></i>
+                                    <%= u.status || 'active' %>
+                                </span>
+                            </td>
+                            <td style="color: var(--text-secondary); font-size: 13px;">
+                                <i class="fas fa-calendar"></i>
+                                <%= new Date(u.created_at).toLocaleDateString() %>
+                            </td>
+                            <td style="text-align: center;">
+                                <div style="display: flex; gap: 6px; justify-content: center;">
+                                    <a href="/admin/users/<%= u.id %>/edit" class="btn-icon btn-secondary" title="Edit User">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <% if (u.id !== user.id) { %>
+                                        <button class="btn-icon btn-danger" onclick="deleteUser(<%= u.id %>, '<%= u.username %>')" title="Delete User">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    <% } else { %>
+                                        <button class="btn-icon" style="opacity: 0.3; cursor: not-allowed;" disabled title="Cannot delete yourself">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    <% } %>
+                                </div>
+                            </td>
+                        </tr>
+                    <% }) %>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+
+<script>
+function deleteUser(id, username) {
+    if (!confirm(`Are you sure you want to delete user "${username}"?\n\nThis will:\n• Delete the user account\n• Remove all associated servers\n• This action cannot be undone`)) {
+        return;
+    }
+
+    const secondConfirm = prompt(`Type "${username}" to confirm deletion:`);
+    if (secondConfirm !== username) {
+        alert('Deletion cancelled - username did not match');
+        return;
+    }
+
+    const btn = event.target.closest('button');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    fetch(`/admin/users/${id}/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast('User deleted successfully', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            alert('Error: ' + (data.error || 'Failed to delete user'));
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-trash"></i>';
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('An error occurred');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash"></i>';
+    });
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type}`;
+    toast.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; animation: slideInRight 0.3s ease; min-width: 300px;';
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+    tr:hover {
+        background: var(--bg-hover) !important;
+    }
+`;
+document.head.appendChild(style);
+</script>
